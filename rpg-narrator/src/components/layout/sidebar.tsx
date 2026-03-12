@@ -4,12 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
-  { href: "/",           label: "Domov",      icon: "🏰", exact: true  },
-  { href: "/campaigns",  label: "Kampane",    icon: "📜", exact: false },
-  { href: "/characters", label: "Postavy",   icon: "🎭", exact: false },
+  { href: "/",           label: "Domov",      icon: "🏠", exact: true  },
+  { href: "/campaigns",  label: "Kampane",    icon: "📋", exact: false },
+  { href: "/characters", label: "Postavy",   icon: "👥", exact: false },
   { href: "/profile",    label: "Profil",    icon: "👤", exact: false },
-  { href: "/sien-slavy", label: "Sieň slávy", icon: "🏆", exact: false },
-  { href: "/rules",      label: "Pravidlá",  icon: "📖", exact: false },
+  { href: "/sien-slavy", label: "Sieň slávy", icon: "⭐", exact: false },
+  { href: "/rules",      label: "Pravidlá",  icon: "📄", exact: false },
 ];
 
 export function Sidebar() {

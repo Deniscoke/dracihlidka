@@ -110,19 +110,30 @@ export function FancyCard({
     color: TITLE_COLOR[theme],
   };
 
+  const iconIsImage = icon && (icon.startsWith("/") || icon.startsWith("http"));
+
   const content = (
     <>
       <div style={noiseStyle} />
       <div style={cornerStyle} />
+      {iconIsImage && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            backgroundImage: `url(${icon})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            opacity: 0.12,
+            pointerEvents: "none",
+          }}
+        />
+      )}
 
       <div className="relative z-10">
-        {icon && (
+        {icon && !iconIsImage && (
           <div className="mb-3">
-            {icon.startsWith("/") || icon.startsWith("http") ? (
-              <img src={icon} alt="" className="w-12 h-12 object-contain" />
-            ) : (
-              <span className="text-3xl">{icon}</span>
-            )}
+            <span className="text-3xl">{icon}</span>
           </div>
         )}
         <div className="leading-[0.92] font-bold" style={{ fontSize: "clamp(1.4rem,4vw,2rem)", letterSpacing: "-0.3px" }}>

@@ -49,11 +49,16 @@ export default function CharactersGlobalPage() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const res = await fetch("/api/characters?owner=me");
-        const json = await res.json();
-        setCharacters(json.characters ?? []);
+        const [apiRes, localRoster] = await Promise.all([
+          fetch("/api/characters?owner=me").then((r) => r.json()),
+          characterRepo.getAll({ campaignId: ROSTER_CAMPAIGN_ID } as Partial<Character>),
+        ]);
+        const apiChars = apiRes.characters ?? [];
+        const apiIds = new Set(apiChars.map((c: Character) => c.id));
+        const merged = [...apiChars, ...localRoster.filter((c) => !apiIds.has(c.id))];
+        setCharacters(merged);
       } else {
-        characterRepo.getAll().then(setCharacters);
+        characterRepo.getAll({ campaignId: ROSTER_CAMPAIGN_ID } as Partial<Character>).then(setCharacters);
       }
     } catch {
       characterRepo.getAll().then(setCharacters);
@@ -89,13 +94,15 @@ export default function CharactersGlobalPage() {
     if (typeof window !== "undefined" && localStorage.getItem("dh_user_id")) {
       const res = await fetch("/api/characters", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(created) });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
+        const text = await res.text();
+        let err: { error?: string } = {};
+        try { err = JSON.parse(text); } catch { /* not JSON */ }
         if (res.status === 400 && err.error) {
           await characterRepo.delete(created.id);
           alert(err.error);
           return;
         }
-        console.warn("[characters] Sync to Supabase failed:", await res.text());
+        console.warn("[characters] Sync to Supabase failed:", text);
       }
     }
     await reload();

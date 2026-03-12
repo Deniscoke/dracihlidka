@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import { RACE_ICONS, CLASS_ICONS } from "@/lib/dh-constants";
 import { CharFancyCard, FancyCardTheme } from "@/components/ui/FancyCard";
+import { characterRepo } from "@/lib/storage";
+import { ROSTER_CAMPAIGN_ID } from "@/lib/roster";
 
 function classToTheme(cls: string): FancyCardTheme {
   if (cls === "Válečník" || cls === "Alchymista") return "violet";
@@ -51,9 +53,13 @@ export default function ProfilePage() {
       Promise.all([
         fetch("/api/profile").then((r) => r.json()),
         fetch("/api/characters?owner=me").then((r) => r.json()),
-      ]).then(([profileRes, charsRes]) => {
+        characterRepo.getAll({ campaignId: ROSTER_CAMPAIGN_ID } as { campaignId: string }),
+      ]).then(([profileRes, charsRes, localRoster]) => {
         setProfile(profileRes.profile ?? null);
-        setCharacters(charsRes.characters ?? []);
+        const apiChars = charsRes.characters ?? [];
+        const apiIds = new Set(apiChars.map((c: { id: string }) => c.id));
+        const merged = [...apiChars, ...localRoster.filter((c) => !apiIds.has(c.id))];
+        setCharacters(merged);
         setLoading(false);
       }).catch(() => setLoading(false));
     });

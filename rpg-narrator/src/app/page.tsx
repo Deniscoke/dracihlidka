@@ -28,7 +28,7 @@ const NAV_CARDS: { href: string; icon: string; title: string; subtitle?: string;
     title: "Pravidlá",
     role: "Knižnica pravidiel",
     watermark: "PR",
-    theme: "violet",
+    theme: "gold",
   },
   {
     href: "/characters",
@@ -36,16 +36,7 @@ const NAV_CARDS: { href: string; icon: string; title: string; subtitle?: string;
     title: "Postavy",
     role: "Galéria & tvorba",
     watermark: "PS",
-    theme: "rose",
-  },
-  {
-    href: "/campaigns",
-    icon: "/ilustrations/home-vypravec.png",
-    title: "Vypravěč",
-    subtitle: "AI",
-    role: "Narrátor príbehu",
-    watermark: "AI",
-    theme: "cyan",
+    theme: "gold",
   },
   {
     href: "/sien-slavy",
