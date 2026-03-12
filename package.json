@@ -1,0 +1,9 @@
+{
+  "name": "draci-hlidka",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev --prefix rpg-narrator",
+    "build": "npm run build --prefix rpg-narrator",
+    "start": "npm run start --prefix rpg-narrator"
+  }
+}

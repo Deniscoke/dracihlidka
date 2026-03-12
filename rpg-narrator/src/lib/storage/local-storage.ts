@@ -1,0 +1,183 @@
+// ============================================================
+// LocalStorage Repository — client-side persistence
+// ============================================================
+
+"use client";
+
+import { Repository } from "./repository";
+import {
+  StorageSchema,
+  CURRENT_SCHEMA_VERSION,
+  Campaign,
+  Session,
+  Character,
+  MemoryEntry,
+  NarrationEntry,
+  CampaignState,
+} from "@/types";
+
+const BASE_STORAGE_KEY = "rpg-narrator-data";
+
+// User-specific storage key — namespaced by auth user ID
+function getStorageKey(): string {
+  if (typeof window === "undefined") return BASE_STORAGE_KEY;
+  const uid = localStorage.getItem("dh_user_id");
+  return uid ? `${BASE_STORAGE_KEY}:${uid}` : BASE_STORAGE_KEY;
+}
+
+// ---- Schema helpers ----
+
+function getStorage(): StorageSchema {
+  if (typeof window === "undefined") {
+    return emptySchema();
+  }
+  const key = getStorageKey();
+  const raw = localStorage.getItem(key);
+  if (!raw) return initStorage();
+
+  const parsed: StorageSchema = JSON.parse(raw);
+  if (parsed.version < CURRENT_SCHEMA_VERSION) {
+    return migrateSchema(parsed);
+  }
+  return parsed;
+}
+
+function saveStorage(data: StorageSchema): void {
+  localStorage.setItem(getStorageKey(), JSON.stringify(data));
+}
+
+function emptySchema(): StorageSchema {
+  return {
+    version: CURRENT_SCHEMA_VERSION,
+    campaigns: [],
+    sessions: [],
+    characters: [],
+    memories: [],
+    narrations: [],
+    campaignStates: [],
+  };
+}
+
+function initStorage(): StorageSchema {
+  const schema = emptySchema();
+  saveStorage(schema);
+  return schema;
+}
+
+function migrateSchema(old: StorageSchema): StorageSchema {
+  const migrated = { ...old } as StorageSchema;
+
+  // v1 → v2: add narrations array
+  if (old.version < 2) {
+    if (!migrated.narrations) {
+      migrated.narrations = [];
+    }
+  }
+
+  // v2 → v3: add memorySummary + houseRules to campaigns (optional fields, no-op needed)
+  // Existing campaigns just won't have these fields, which is fine since they're optional.
+
+  // v3 → v4: add campaignStates array
+  if (old.version < 4) {
+    if (!(migrated as unknown as Record<string, unknown>).campaignStates) {
+      migrated.campaignStates = [];
+    }
+  }
+
+  migrated.version = CURRENT_SCHEMA_VERSION;
+  saveStorage(migrated);
+  return migrated;
+}
+
+function generateId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  // fallback for non-secure contexts (http://)
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = Math.random() * 16 | 0;
+    return (c === "x" ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+}
+
+// ---- Generic local repository factory ----
+
+type CollectionKey = "campaigns" | "sessions" | "characters" | "memories" | "narrations" | "campaignStates";
+
+function createLocalRepo<T extends { id: string; createdAt: string }>(
+  collectionKey: CollectionKey
+): Repository<T> {
+  return {
+    async getAll(filter?: Partial<T>): Promise<T[]> {
+      const data = getStorage();
+      let items = data[collectionKey] as unknown as T[];
+      if (filter) {
+        items = items.filter((item) =>
+          Object.entries(filter).every(
+            ([key, value]) => (item as Record<string, unknown>)[key] === value
+          )
+        );
+      }
+      return items;
+    },
+
+    async getById(id: string): Promise<T | null> {
+      const data = getStorage();
+      const items = data[collectionKey] as unknown as T[];
+      return items.find((i) => i.id === id) ?? null;
+    },
+
+    async create(input: Omit<T, "id" | "createdAt">): Promise<T> {
+      const data = getStorage();
+      const item = {
+        ...input,
+        id: generateId(),
+        createdAt: new Date().toISOString(),
+      } as unknown as T;
+      (data[collectionKey] as unknown as T[]).push(item);
+      saveStorage(data);
+      return item;
+    },
+
+    async update(id: string, updates: Partial<T>): Promise<T> {
+      const data = getStorage();
+      const items = data[collectionKey] as unknown as T[];
+      const idx = items.findIndex((i) => i.id === id);
+      if (idx === -1) throw new Error(`Item ${id} not found in ${collectionKey}`);
+      items[idx] = { ...items[idx], ...updates, updatedAt: new Date().toISOString() } as T;
+      saveStorage(data);
+      return items[idx];
+    },
+
+    async delete(id: string): Promise<void> {
+      const data = getStorage();
+      const items = data[collectionKey] as unknown as T[];
+      const idx = items.findIndex((i) => i.id === id);
+      if (idx === -1) return;
+      items.splice(idx, 1);
+      saveStorage(data);
+    },
+  };
+}
+
+// ---- Campaign repo with upsert for Supabase sync ----
+
+const campaignRepoBase = createLocalRepo<Campaign>("campaigns");
+export const campaignRepo = {
+  ...campaignRepoBase,
+  async upsert(c: Campaign): Promise<Campaign> {
+    const data = getStorage();
+    const items = data.campaigns as Campaign[];
+    const idx = items.findIndex((i) => i.id === c.id);
+    const item = { ...c, updatedAt: c.updatedAt || new Date().toISOString() };
+    if (idx >= 0) items[idx] = item;
+    else items.push(item);
+    saveStorage(data);
+    return item;
+  },
+};
+export const sessionRepo = createLocalRepo<Session>("sessions");
+export const characterRepo = createLocalRepo<Character>("characters");
+export const memoryRepo = createLocalRepo<MemoryEntry>("memories");
+export const narrationRepo = createLocalRepo<NarrationEntry>("narrations");
+export const campaignStateRepo = createLocalRepo<CampaignState>("campaignStates");

@@ -1,0 +1,132 @@
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════════════
+   Dračí Hlídka — Medieval Cozy Design System
+   Drevo, kov, zbrane, mágia — teplé zeme, pergamen, mosadz
+══════════════════════════════════════════════════════════════ */
+:root {
+  /* Backgrounds — aged wood, dark tavern */
+  --bg-deep: #141210;
+  --bg-main: #1c1814;
+  --bg-panel: #252019;
+  --bg-card: #2a231c;
+  --bg-elevated: #322a22;
+
+  /* Text — parchment, warm cream */
+  --text-primary: #e8e0d4;
+  --text-secondary: #c4b8a8;
+  --text-muted: #8a7f72;
+  --text-dim: #6b6156;
+
+  /* Accents — gold, copper, bronze (no neon) */
+  --accent-gold: #c9a227;
+  --accent-gold-dim: #a8861f;
+  --accent-copper: #b87333;
+  --accent-bronze: #8b7355;
+  --accent-metal: #6b5b4f;
+
+  /* Borders — wood grain, metal frame */
+  --border-subtle: rgba(139, 115, 85, 0.25);
+  --border-default: rgba(139, 115, 85, 0.4);
+  --border-accent: rgba(201, 162, 39, 0.5);
+
+  /* Class accents — muted, thematic */
+  --class-warrior: #a85c4a;
+  --class-ranger: #5a8a6a;
+  --class-alchemist: #8a6a9a;
+  --class-wizard: #6a7aaa;
+  --class-thief: #5a8a8a;
+  --class-cleric: #c9a227;
+}
+
+@theme inline {
+  --color-background: var(--bg-main);
+  --color-foreground: var(--text-primary);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--bg-main);
+  color: var(--text-primary);
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+/* Utility classes for medieval theme */
+.dh-input {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+}
+.dh-input::placeholder {
+  color: var(--text-dim);
+}
+.dh-input:focus {
+  outline: none;
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 0 2px rgba(201, 162, 39, 0.15);
+}
+
+.dh-btn-primary {
+  background: linear-gradient(180deg, var(--accent-gold) 0%, var(--accent-gold-dim) 100%);
+  color: #1a1510;
+  border: 1px solid rgba(201, 162, 39, 0.5);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+.dh-btn-primary:hover {
+  background: linear-gradient(180deg, #d4ad2e 0%, var(--accent-gold) 100%);
+}
+
+.dh-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+/* ---- Narrator Avatar ---- */
+.narrator-avatar-container {
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.narrator-avatar {
+  width: 112px;
+  height: 112px;
+  background-image: url('/narrator/narrator_sprite.svg');
+  background-size: 300% 100%;
+  background-position: 0 0;
+  background-repeat: no-repeat;
+  border-radius: 8px;
+  border: 2px solid var(--border-default);
+  box-shadow: inset 0 0 8px rgba(0,0,0,0.3);
+  transition: border-color 0.2s ease;
+}
+
+.narrator-avatar-container:hover .narrator-avatar {
+  border-color: var(--accent-gold);
+}
+
+/* Mouth animation when speaking */
+.narrator-avatar.speaking {
+  animation: narrator-mouth 0.35s steps(3) infinite;
+}
+
+/* Compact avatar (56px) — 300% = 168px */
+.narrator-avatar-compact.speaking {
+  animation: narrator-mouth-compact 0.35s steps(3) infinite;
+}
+
+@keyframes narrator-mouth {
+  0% { background-position: 0 0; }
+  100% { background-position: -336px 0; }
+}
+
+@keyframes narrator-mouth-compact {
+  0% { background-position: 0 0; }
+  100% { background-position: -168px 0; }
+}
+
+@keyframes dhSplashFloat {
+  0%   { transform: translate(0, 0) scale(1); opacity: 0.15; }
+  100% { transform: translate(8px, 8px) scale(1.05); opacity: 0.25; }
+}
