@@ -5,8 +5,5 @@
     "dev": "npm run dev --prefix rpg-narrator",
     "build": "npm run build --prefix rpg-narrator",
     "start": "npm run start --prefix rpg-narrator"
-  },
-  "dependencies": {
-    "next": "16.1.6"
   }
 }
