@@ -31,3 +31,6 @@ yarn-error.log*
 
 # Claude worktrees (dev copies)
 .claude/worktrees/
+
+# Legacy subfolder (moved to root)
+rpg-narrator/
