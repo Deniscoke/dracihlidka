@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
-import { Sidebar } from "@/components/layout/sidebar";
-import { Header } from "@/components/layout/header";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "RPG Narrator Engine",
-  description: "Modular web-based RPG narrator and campaign manager",
+  title: "Dračí Hlídka – RPG Narrator Engine",
+  description: "Správa kampaní, postáv a sessionů pre Dračí Hlídku",
 };
 
 export default function RootLayout({
@@ -15,15 +13,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="sk" className="dark">
-      <body className="antialiased">
-        <div className="flex min-h-screen">
-          <Sidebar />
-          <div className="flex-1 flex flex-col min-w-0">
-            <Header />
-            <main className="flex-1 p-6 overflow-visible min-h-0" style={{ background: "var(--bg-main)" }}>{children}</main>
-          </div>
-        </div>
-      </body>
+      <body className="antialiased">{children}</body>
     </html>
   );
 }
