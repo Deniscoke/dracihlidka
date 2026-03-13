@@ -1,4 +1,5 @@
 {
   "framework": "nextjs",
-  "rootDirectory": "rpg-narrator"
+  "installCommand": "npm install && cd rpg-narrator && npm install",
+  "buildCommand": "npm run build"
 }
