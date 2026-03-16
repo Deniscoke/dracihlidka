@@ -9,7 +9,7 @@ function SignOutButton() {
   async function handleSignOut() {
     const supabase = createClient();
     await supabase.auth.signOut();
-    window.location.reload();
+    window.location.href = "/auth/login";
   }
   return (
     <button
@@ -17,7 +17,7 @@ function SignOutButton() {
       onClick={handleSignOut}
       className="text-[10px] px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200 transition-colors"
     >
-      Odhlásiť
+      Odhlásit
     </button>
   );
 }
@@ -79,7 +79,7 @@ export function AuthButton() {
   }
 
   if (user) {
-    const email = user.email ?? user.user_metadata?.email ?? "Používateľ";
+    const email = user.email ?? user.user_metadata?.email ?? "Uživatel";
     const name = user.user_metadata?.full_name ?? user.user_metadata?.name ?? email.split("@")[0];
     return (
       <div className="flex items-center gap-2">
@@ -96,7 +96,7 @@ export function AuthButton() {
       href="/"
       className="text-xs px-3 py-1.5 rounded bg-amber-600 hover:bg-amber-500 text-black font-medium transition-colors"
     >
-      Prihlásiť sa
+      Přihlásit se
     </Link>
   );
 }

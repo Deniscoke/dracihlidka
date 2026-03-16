@@ -38,34 +38,19 @@ export async function middleware(request: NextRequest) {
   const isAuthRoute = request.nextUrl.pathname.startsWith("/auth");
   const isAppRoute = request.nextUrl.pathname.startsWith("/app") || request.nextUrl.pathname === "/app";
 
-  // Neprihlásený na /app → presmeruj na login (prvá stránka)
+  // Neprihlásený na /app → presmeruj na login
   if (!user && isAppRoute) {
     const url = request.nextUrl.clone();
-    url.pathname = "/";
+    url.pathname = "/auth/login";
     url.searchParams.set("next", request.nextUrl.pathname);
     return NextResponse.redirect(url);
   }
 
-  // Neprihlásený na iné chránené routy (ak by boli) → login
-  if (!user && !isAuthRoute && request.nextUrl.pathname !== "/") {
-    const url = request.nextUrl.clone();
-    url.pathname = "/";
-    url.searchParams.set("next", request.nextUrl.pathname);
-    return NextResponse.redirect(url);
-  }
-
-  // Prihlásený na / (login) → presmeruj do hlavného rozhrania
-  if (user && request.nextUrl.pathname === "/") {
+  // Prihlásený na / alebo /auth/login → presmeruj do app
+  if (user && (request.nextUrl.pathname === "/" || request.nextUrl.pathname === "/auth/login")) {
     const url = request.nextUrl.clone();
     url.pathname = "/app";
     url.searchParams.delete("next");
-    return NextResponse.redirect(url);
-  }
-
-  // Prihlásený na /auth/login → presmeruj do app
-  if (user && request.nextUrl.pathname === "/auth/login") {
-    const url = request.nextUrl.clone();
-    url.pathname = "/app";
     return NextResponse.redirect(url);
   }
 
