@@ -116,7 +116,7 @@ export default function NarratePage() {
   const [availableLoot, setAvailableLoot] = useState<string[]>([]);
 
   // Right panel tab
-  const [rightTab, setRightTab] = useState<"characters" | "map">("characters");
+  const [rightTab, setRightTab] = useState<"characters" | "world" | "location" | "combat">("characters");
 
   // Dice session — accumulates rolls for the current narration turn
   // Cleared after each successful narration generate
@@ -388,7 +388,7 @@ export default function NarratePage() {
       // Update map state
       if (data.mapLocation) {
         setMapLocation(data.mapLocation);
-        setRightTab("map");
+        setRightTab("world");
       }
       if (data.mapMarkers && Array.isArray(data.mapMarkers)) {
         setMapMarkers(prev => {
@@ -401,6 +401,7 @@ export default function NarratePage() {
       }
       if (data.combatInitiated && data.combatScene) {
         setCombatScene(data.combatScene);
+        setRightTab("combat");
       }
       if (consequences?.lootFound?.length) {
         setAvailableLoot(prev => [...prev, ...(consequences.lootFound ?? [])]);
@@ -659,14 +660,20 @@ export default function NarratePage() {
         </div>
       )}
 
-      {/* Combat map — zobrazí se když AI spustí bojový režim */}
+      {/* Mobile combat banner — visible only on mobile (lg:hidden), right panel is hidden there */}
       {combatScene && (
-        <div className="mb-4">
-          <CombatMap
-            scene={combatScene}
-            characters={characters}
-            onClose={() => setCombatScene(null)}
-          />
+        <div className="mb-4 lg:hidden rounded-lg border border-red-800/60 bg-red-950/30 px-3 py-2 flex items-center gap-2">
+          <span className="text-red-400 text-sm">⚔️</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium text-red-300">Boj probíhá — {combatScene.description}</p>
+            <p className="text-[10px] text-red-500/70">Mapa boje je dostupná na větším displeji.</p>
+          </div>
+          <button
+            onClick={() => setCombatScene(null)}
+            className="text-[10px] text-red-600 hover:text-red-400 transition-colors flex-shrink-0"
+          >
+            Zavřít
+          </button>
         </div>
       )}
 
@@ -864,18 +871,40 @@ export default function NarratePage() {
                   : "text-zinc-500 hover:text-zinc-300"
               }`}
             >
-              🎭 Postavy ({characters.length})
+              🎭 Postavy
             </button>
             <button
-              onClick={() => setRightTab("map")}
+              onClick={() => setRightTab("world")}
               className={`flex-1 py-2 text-xs font-medium tracking-wider uppercase transition-colors ${
-                rightTab === "map"
+                rightTab === "world"
                   ? "text-amber-400 border-b-2 border-amber-500"
                   : "text-zinc-500 hover:text-zinc-300"
               }`}
             >
-              🗺 Mapa {mapLocation ? `· ${mapLocation.locationName}` : ""}
+              🗺 Svět
             </button>
+            <button
+              onClick={() => setRightTab("location")}
+              className={`flex-1 py-2 text-xs font-medium tracking-wider uppercase transition-colors ${
+                rightTab === "location"
+                  ? "text-amber-400 border-b-2 border-amber-500"
+                  : "text-zinc-500 hover:text-zinc-300"
+              }`}
+            >
+              📍 Místo
+            </button>
+            {combatScene && (
+              <button
+                onClick={() => setRightTab("combat")}
+                className={`flex-1 py-2 text-xs font-medium tracking-wider uppercase transition-colors ${
+                  rightTab === "combat"
+                    ? "text-red-400 border-b-2 border-red-500"
+                    : "text-zinc-500 hover:text-zinc-300"
+                }`}
+              >
+                ⚔️ Boj
+              </button>
+            )}
           </div>
 
           {/* Tab content */}
@@ -911,7 +940,75 @@ export default function NarratePage() {
                 </div>
               )}
             </div>
+          ) : rightTab === "world" ? (
+            <div className="flex-1 overflow-hidden" style={{ minHeight: 400 }}>
+              <GameMap currentLocation={mapLocation} markers={mapMarkers} />
+            </div>
+          ) : rightTab === "location" ? (
+            <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(63,63,70,0.5) transparent" }}>
+              {mapLocation ? (
+                <div className="space-y-3">
+                  {/* Location header */}
+                  <div className="rounded-lg px-3 py-2.5" style={{ background: "rgba(201,162,39,0.06)", border: "1px solid rgba(201,162,39,0.15)" }}>
+                    <p className="text-sm font-semibold" style={{ color: "var(--accent-gold)" }}>
+                      {mapLocation.locationName}
+                    </p>
+                    <p className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>
+                      {mapLocation.map === "ihienburgh" ? "Region Ihienburgh" : "Svět Othion"} · {mapLocation.locationId}
+                    </p>
+                  </div>
+                  {/* Markers at this specific location */}
+                  {(() => {
+                    const here = mapMarkers.filter(m => m.active && m.locationId === mapLocation.locationId);
+                    return here.length > 0 ? (
+                      <div>
+                        <p className="text-[9px] uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>Na tomto místě</p>
+                        <ul className="space-y-1.5">
+                          {here.map(m => (
+                            <li key={m.id} className="flex items-start gap-2 text-xs px-2 py-1.5 rounded"
+                              style={{ background: "rgba(42,35,28,0.5)", border: "1px solid rgba(120,90,50,0.2)" }}>
+                              <span className="flex-shrink-0">{
+                                m.type === "enemy" ? "⚔️" :
+                                m.type === "city" ? "🏰" :
+                                m.type === "quest" ? "📜" :
+                                m.type === "npc" ? "👤" : "📍"
+                              }</span>
+                              <div>
+                                <span className="font-medium" style={{ color: "var(--text-primary)" }}>{m.name}</span>
+                                {m.description && (
+                                  <p className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>{m.description}</p>
+                                )}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : (
+                      <p className="text-xs italic" style={{ color: "var(--text-dim, rgba(100,80,50,0.4))" }}>
+                        Žádné aktivity na tomto místě.
+                      </p>
+                    );
+                  })()}
+                </div>
+              ) : (
+                <p className="text-xs italic" style={{ color: "var(--text-dim, rgba(100,80,50,0.4))" }}>
+                  Poloha zatím neznáma.
+                </p>
+              )}
+            </div>
+          ) : rightTab === "combat" && combatScene ? (
+            <div className="flex-1 overflow-y-auto">
+              <CombatMap
+                scene={combatScene}
+                characters={characters}
+                onClose={() => {
+                  setCombatScene(null);
+                  setRightTab(mapLocation ? "world" : "characters");
+                }}
+              />
+            </div>
           ) : (
+            /* Fallback: combat tab selected but combatScene was cleared — switch back */
             <div className="flex-1 overflow-hidden" style={{ minHeight: 400 }}>
               <GameMap currentLocation={mapLocation} markers={mapMarkers} />
             </div>
