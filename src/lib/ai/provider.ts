@@ -27,6 +27,22 @@ export interface CharacterSnapshot {
   isNPC: boolean;
 }
 
+/** Structured story beat — generated per narration, persisted to memory_entries */
+export interface StoryBeat {
+  summary: string;           // 1–2 sentences describing what happened
+  location?: string;         // where the scene took place (locationId or name)
+  importantNPCs?: string[];  // NPC names that appeared or acted
+  questUpdates?: string[];   // quest changes, discoveries, objectives completed/failed
+  combatOutcome?: string;    // if combat occurred: outcome in 1 sentence
+}
+
+/** Structured event log entry from memory_entries (Tier 3 context) */
+export interface EventLogEntry {
+  title: string;
+  content: string;   // JSON.stringify(StoryBeat)
+  createdAt: string;
+}
+
 export interface NarrationRequest {
   campaignId: string;
   campaignTitle: string;
@@ -36,6 +52,7 @@ export interface NarrationRequest {
   rulesPackText: string;  // user-editable plain-text rules context for AI
   recentEntries: CompactNarrationEntry[];
   relevantEntries: CompactNarrationEntry[]; // retrieved via similarity
+  eventLog?: EventLogEntry[];               // last N structured story beats (Tier 3)
   campaignState: CampaignState | null;
   characters: CharacterSnapshot[];          // campaign characters snapshot
   userInput: string;
@@ -82,6 +99,8 @@ export interface NarrationResponse {
   consequences?: NarrationConsequences; // character deltas
   mapLocation?: MapLocation;     // current player position on the map
   mapMarkers?: MapMarkerData[];  // markers to add/update on the map
+  /** Structured beat for memory_entries persistence */
+  storyBeat?: StoryBeat | null;
   /** Spustí bojový režim — zobrazí mřížkovou mapu */
   combatInitiated?: boolean;
   combatScene?: CombatScene;
