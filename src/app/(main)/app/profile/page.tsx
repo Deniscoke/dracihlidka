@@ -75,7 +75,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="max-w-2xl">
-        <p className="text-sm" style={{ color: "var(--text-muted)" }}>Načítavam…</p>
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>Načítávám…</p>
       </div>
     );
   }
@@ -84,7 +84,7 @@ export default function ProfilePage() {
     return (
       <div className="max-w-2xl">
         <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-          Supabase nie je nakonfigurovaný. Profily vyžadujú prihlásenie cez Google.
+          Supabase není nakonfigurovaný. Profily vyžadují přihlášení přes Google.
         </p>
       </div>
     );
@@ -95,10 +95,10 @@ export default function ProfilePage() {
       <div className="max-w-2xl">
         <div className="rounded-xl p-6 dh-card">
           <p className="text-sm mb-4" style={{ color: "var(--text-secondary)" }}>
-            Pre zobrazenie profilu sa musíš prihlásiť.
+            Pro zobrazení profilu se musíš přihlásit.
           </p>
           <Link href="/" className="dh-btn-primary inline-block px-4 py-2 rounded-lg text-sm font-medium">
-            Prihlásiť sa cez Google
+            Přihlásit se přes Google
           </Link>
         </div>
       </div>
@@ -110,7 +110,7 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-3xl">
-      <h1 className="text-xl font-bold mb-6" style={{ color: "var(--text-primary)" }}>Môj profil</h1>
+      <h1 className="text-xl font-bold mb-6" style={{ color: "var(--text-primary)" }}>Můj profil</h1>
 
       <div className="rounded-xl p-6 mb-8 dh-card">
         <div className="flex items-center gap-4">
@@ -132,15 +132,15 @@ export default function ProfilePage() {
         <section className="mb-8">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>
-              Moje kampane ({campaigns.length})
+              Moje kampaně ({campaigns.length})
             </h2>
             <Link href="/app/campaigns" className="text-xs" style={{ color: "var(--accent-gold)" }}>
-              Všetky kampane →
+              Všechny kampaně →
             </Link>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             {campaigns.map((c) => (
-              <Link key={c.id} href={`/campaigns/${c.id}`} className="rounded-xl p-4 block dh-card hover:opacity-90 transition-opacity">
+              <Link key={c.id} href={`/app/campaigns/${c.id}`} className="rounded-xl p-4 block dh-card hover:opacity-90 transition-opacity">
                 <p className="font-medium" style={{ color: "var(--text-primary)" }}>{c.name}</p>
                 {c.description && (
                   <p className="text-xs mt-1 line-clamp-2" style={{ color: "var(--text-muted)" }}>{c.description}</p>
@@ -164,24 +164,24 @@ export default function ProfilePage() {
           </Link>
         </div>
         <p className="text-xs mb-3" style={{ color: "var(--text-dim)" }}>
-          Postavy vytvorené v sekcii Postavy sa tu zobrazujú automaticky.
+          Postavy vytvořené v sekci Postavy se tu zobrazují automaticky.
         </p>
         {characters.length === 0 ? (
           <div className="rounded-xl p-6 dh-card" style={{ borderStyle: "dashed" }}>
             <p className="text-sm mb-2" style={{ color: "var(--text-muted)" }}>
-              Zatiaľ nemáš žiadne postavy.
+              Zatím nemáš žádné postavy.
             </p>
             <p className="text-xs mb-4" style={{ color: "var(--text-dim)" }}>
-              Vytvor si postavu v sekcii Postavy — zobrazí sa tu automaticky.
+              Vytvoř si postavu v sekci Postavy — zobrazí se tu automaticky.
             </p>
             <Link href="/app/characters" className="text-sm" style={{ color: "var(--accent-gold)" }}>
-              Vytvoriť postavu →
+              Vytvořit postavu →
             </Link>
           </div>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
             {characters.map((c) => (
-              <Link key={c.id} href={c.campaignId === "__roster__" ? `/campaigns/__roster__/characters` : `/campaigns/${c.campaignId}/characters`}>
+              <Link key={c.id} href={c.campaignId === "__roster__" ? `/app/characters` : `/app/campaigns/${c.campaignId}/characters`}>
                 <CharFancyCard
                   name={c.name}
                   race={c.race}
@@ -204,7 +204,7 @@ export default function ProfilePage() {
 
       <div className="mt-8 pt-6" style={{ borderTop: "1px solid var(--border-subtle)" }}>
         <Link href="/app/sien-slavy" className="text-sm" style={{ color: "var(--accent-gold)" }}>
-          🏆 Sieň slávy — všetci hráči →
+          🏆 Síň slávy — všichni hráči →
         </Link>
       </div>
     </div>
