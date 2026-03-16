@@ -93,7 +93,7 @@ export default function CharactersPage() {
 
   /* delete */
   async function handleDelete(id: string) {
-    if (!confirm("Zmazať túto postavu?")) return;
+    if (!confirm("Smazat tuto postavu?")) return;
     await characterRepo.delete(id);
     reload();
   }
@@ -107,7 +107,8 @@ export default function CharactersPage() {
       campaignId,
       updatedAt: new Date().toISOString(),
     });
-    if (typeof window !== "undefined" && localStorage.getItem("dh_user_id")) {
+    const { data: { user } } = await createClient().auth.getUser();
+    if (user) {
       const res = await fetch("/api/characters", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -120,6 +121,7 @@ export default function CharactersPage() {
           alert(err.error);
           return;
         }
+        console.warn("[addFromRoster] Sync to Supabase failed:", res.status);
       }
     }
     setRosterModalOpen(false);
@@ -163,7 +165,7 @@ export default function CharactersPage() {
             className="text-sm mb-1 inline-block transition-colors"
             style={{ color: "var(--text-muted)" }}
           >
-            ← {isRoster ? "Späť na postavy" : "Späť na kampaň"}
+            ← {isRoster ? "Zpět na postavy" : "Zpět na kampaň"}
           </Link>
           <h1 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>Postavy</h1>
         </div>
@@ -172,7 +174,7 @@ export default function CharactersPage() {
             <button onClick={() => setRosterModalOpen(true)}
               className="flex items-center gap-2 font-medium text-sm px-3 py-2 rounded-lg transition-all dh-btn-primary"
             >
-              👤 Vyber z profilu
+              👤 Vybrat z profilu
             </button>
           )}
           {isRoster && (
@@ -180,7 +182,7 @@ export default function CharactersPage() {
               href="/app/characters"
               className="flex items-center gap-2 font-medium text-sm px-3 py-2 rounded-lg transition-all dh-btn-primary"
             >
-              + Vytvoriť postavu
+              + Vytvořit postavu
             </Link>
           )}
         </div>
@@ -190,11 +192,11 @@ export default function CharactersPage() {
       {rosterModalOpen && (
         <div className="fixed inset-0 flex items-center justify-center z-50" style={{ background: "rgba(0,0,0,0.7)" }} onClick={() => setRosterModalOpen(false)}>
           <div className="rounded-xl p-6 w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col" style={{ background: "var(--bg-card)", border: "1px solid var(--border-default)" }} onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-sm font-semibold mb-2" style={{ color: "var(--text-primary)" }}>Vyber postavu z profilu</h3>
-            <p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>Vyber postavu — všetky údaje (atribúty, HP, inventár, poznámky) sa skopírujú do kampaně.</p>
+            <h3 className="text-sm font-semibold mb-2" style={{ color: "var(--text-primary)" }}>Vyberte postavu z profilu</h3>
+            <p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>Vyber postavu — všechny údaje (atributy, HP, inventář, poznámky) se zkopírují do kampaně.</p>
             <div className="flex-1 overflow-y-auto space-y-2 pr-2">
               {rosterChars.length === 0 ? (
-                <p className="text-sm py-4 text-center" style={{ color: "var(--text-muted)" }}>Profil je prázdny. Vytvor postavy v sekcii Postavy.</p>
+                <p className="text-sm py-4 text-center" style={{ color: "var(--text-muted)" }}>Profil je prázdný. Vytvoř postavy v sekci Postavy.</p>
               ) : (
                 rosterChars.map((rc) => (
                   <button
@@ -214,7 +216,7 @@ export default function CharactersPage() {
               )}
             </div>
             <button onClick={() => setRosterModalOpen(false)} className="mt-4 text-sm transition-colors" style={{ color: "var(--text-muted)" }}>
-              Zrušiť
+              Zrušit
             </button>
           </div>
         </div>
@@ -224,7 +226,7 @@ export default function CharactersPage() {
       {pcs.length > 0 && (
         <section className="mb-6">
           <h2 className="text-xs font-semibold mb-3 uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>
-            Hrdinovia ({pcs.length})
+            Hrdinové ({pcs.length})
           </h2>
           <div className="grid gap-3 sm:grid-cols-2">
             {pcs.map(c => (
@@ -286,15 +288,15 @@ export default function CharactersPage() {
         <div className="text-center py-16 rounded-xl" style={{ border: "1px dashed var(--border-default)" }}>
           <p className="text-3xl mb-3">🎭</p>
           <p className="text-sm mb-4" style={{ color: "var(--text-muted)" }}>
-            {isRoster ? "Žiadne postavy v rosteri." : "Žiadne postavy v tejto kampani."}
+            {isRoster ? "Žádné postavy v rosteru." : "Žádné postavy v této kampani."}
           </p>
           {isRoster ? (
             <Link href="/app/characters" className="text-sm underline underline-offset-2" style={{ color: "var(--accent-gold)" }}>
-              Vytvoriť postavu v Postavách →
+              Vytvořit postavu v Postavách →
             </Link>
           ) : (
             <button onClick={() => setRosterModalOpen(true)} className="text-sm underline underline-offset-2" style={{ color: "var(--accent-gold)" }}>
-              Vyber z profilu →
+              Vybrat z profilu →
             </button>
           )}
         </div>
@@ -330,7 +332,7 @@ function CharacterCard({ character: c, isEditing, editChar, onEdit, onDelete, on
     return (
       <div className="rounded-xl p-4 space-y-3" style={{ border: "1px solid var(--border-accent)", background: "var(--bg-panel)" }}>
         <input value={editChar.name ?? ""} onChange={e => onChange({ ...editChar, name: e.target.value })}
-          placeholder="Meno" className={inp} />
+          placeholder="Jméno" className={inp} />
         <div className="grid grid-cols-2 gap-2">
           <input value={editChar.race ?? ""}  onChange={e => onChange({ ...editChar, race: e.target.value })}  placeholder="Rasa"      className={inp} />
           <input value={editChar.class ?? ""} onChange={e => onChange({ ...editChar, class: e.target.value })} placeholder="Povolanie" className={inp} />
@@ -349,7 +351,7 @@ function CharacterCard({ character: c, isEditing, editChar, onEdit, onDelete, on
           placeholder="Poznámky…" rows={2} className={inp + " resize-y"} />
         <div className="flex gap-2">
           <button onClick={onSave}   className="dh-btn-primary font-semibold text-xs px-3 py-1.5 rounded transition-colors">Uložiť</button>
-          <button onClick={onCancel} className="text-xs px-3 py-1.5 transition-colors" style={{ color: "var(--text-muted)" }}>Zrušiť</button>
+          <button onClick={onCancel} className="text-xs px-3 py-1.5 transition-colors" style={{ color: "var(--text-muted)" }}>Zrušit</button>
         </div>
       </div>
     );

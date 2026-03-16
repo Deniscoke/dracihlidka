@@ -219,12 +219,12 @@ export default function NarratePage() {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "narrations", filter: `campaign_id=eq.${campaignId}` },
-        () => { loadRecent(); }
+        () => { void loadRecent(); }
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "characters", filter: `campaign_id=eq.${campaignId}` },
-        () => { loadCharacters(); }
+        () => { void loadCharacters(); }
       )
       .subscribe();
 
@@ -290,7 +290,10 @@ export default function NarratePage() {
       if (Object.keys(updates).length > 0) {
         console.log(`[consequences] Updating "${match.name}":`, updates);
         if (SB_AVAILABLE) {
-          await updateCharacter(match.id, updates).catch(console.error);
+          await updateCharacter(match.id, updates).catch((err) => {
+            console.error(`[applyDeltas] updateCharacter failed for "${match.name}":`, err);
+            setError("Nepodarilo sa uložiť zmeny postavy. Skúste znovu alebo obnovte stránku.");
+          });
         } else {
           await characterRepo.update(match.id, updates);
         }

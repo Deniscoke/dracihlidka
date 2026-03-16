@@ -71,7 +71,7 @@ export default function CharactersGlobalPage() {
 
   async function handleSheetSave(data: DHCharacterData) {
     if (characters.length >= MAX_CHARACTERS) {
-      alert(`Maximálny počet postáv je ${MAX_CHARACTERS}. Zmaž niektorú postavu pred vytvorením novej.`);
+      alert(`Maximální počet postav je ${MAX_CHARACTERS}. Smaž nějakou postavu před vytvořením nové.`);
       return;
     }
     const odo = data.stats.odolnost;
@@ -91,7 +91,8 @@ export default function CharactersGlobalPage() {
       portraitUrl: data.portraitUrl,
       updatedAt:   new Date().toISOString(),
     });
-    if (typeof window !== "undefined" && localStorage.getItem("dh_user_id")) {
+    const { data: { user } } = await createClient().auth.getUser();
+    if (user) {
       const res = await fetch("/api/characters", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(created) });
       if (!res.ok) {
         const text = await res.text();
@@ -146,14 +147,14 @@ export default function CharactersGlobalPage() {
         <div>
           <h1 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>Postavy</h1>
           <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-            {characters.length} / {MAX_CHARACTERS} postáv — zobrazujú sa aj v profile
+            {characters.length} / {MAX_CHARACTERS} postav — zobrazují se i v profilu
           </p>
         </div>
         <div className="flex gap-2">
           <Link href="/app/campaigns"
             className="text-sm px-3 py-1.5 rounded-lg transition-colors"
             style={{ color: "var(--text-muted)", border: "1px solid var(--border-default)" }}
-          >Kampane</Link>
+            >Kampaně</Link>
           <button
             onClick={() => setView("classSelect")}
             disabled={characters.length >= MAX_CHARACTERS}
@@ -166,22 +167,22 @@ export default function CharactersGlobalPage() {
       {characters.length === 0 ? (
         <div className="rounded-xl p-10 text-center" style={{ border: "1px dashed var(--border-default)" }}>
           <p className="text-3xl mb-3">🎭</p>
-          <p className="text-sm mb-4" style={{ color: "var(--text-muted)" }}>Zatiaľ žiadne postavy.</p>
+          <p className="text-sm mb-4" style={{ color: "var(--text-muted)" }}>Zatím žádné postavy.</p>
           <p className="text-xs mb-4" style={{ color: "var(--text-dim)" }}>
-            Vytvor si postavu — zobrazí sa aj v profile. Max. {MAX_CHARACTERS} postáv.
+            Vytvoř si postavu — zobrazí se i v profilu. Max. {MAX_CHARACTERS} postav.
           </p>
           <button
             onClick={() => setView("classSelect")}
             className="text-sm px-4 py-2 rounded-lg dh-btn-primary font-semibold"
             style={{ color: "var(--accent-gold)" }}
-          >Vytvoriť postavu →</button>
+          >Vytvořit postavu →</button>
         </div>
       ) : (
         <>
         {characters.length >= MAX_CHARACTERS && (
           <div className="rounded-xl p-3 mb-4 dh-card" style={{ borderStyle: "dashed" }}>
             <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-              Dosiahol si limit {MAX_CHARACTERS} postáv. Zmaž niektorú pred vytvorením novej.
+              Dosáhl jsi limit {MAX_CHARACTERS} postav. Smaž nějakou před vytvořením nové.
             </p>
           </div>
         )}
