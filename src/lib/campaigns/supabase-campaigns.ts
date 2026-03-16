@@ -95,7 +95,7 @@ export async function getMyCampaigns(userId: string): Promise<CampaignWithRole[]
 export async function createCampaign(
   userId: string,
   input: { name: string; description?: string; passwordHash?: string; passwordSalt?: string }
-): Promise<Campaign | null> {
+): Promise<Campaign> {
   const supabase = createClient();
 
   const { data: campaign, error: createErr } = await supabase
@@ -111,7 +111,9 @@ export async function createCampaign(
     .select()
     .single();
 
-  if (createErr || !campaign) return null;
+  if (createErr || !campaign) {
+    throw new Error(createErr?.message ?? "Neznámá chyba při vytváření kampaně");
+  }
 
   const { error: memberErr } = await supabase.from("campaign_members").insert({
     user_id: userId,
@@ -122,7 +124,7 @@ export async function createCampaign(
   if (memberErr) {
     // Rollback: delete campaign
     await supabase.from("campaigns").delete().eq("id", campaign.id);
-    return null;
+    throw new Error("Nepodařilo se přidat vlastníka: " + memberErr.message);
   }
 
   return supabaseCampaignToCampaign({

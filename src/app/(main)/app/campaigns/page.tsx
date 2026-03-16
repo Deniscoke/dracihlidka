@@ -124,16 +124,12 @@ export default function CampaignsPage() {
           description: desc.trim(),
           ...extra,
         });
-        if (created) {
-          await campaignRepo.upsert(created);
-          unlockedCampaigns.add(created.id);
-          setName("");
-          setDesc("");
-          setPassword("");
-          reload();
-        } else {
-          setCreateError("Nepodařilo se vytvořit kampaň. Zkontroluj připojení nebo zkus to znovu.");
-        }
+        await campaignRepo.upsert(created);
+        unlockedCampaigns.add(created.id);
+        setName("");
+        setDesc("");
+        setPassword("");
+        reload();
         return;
       }
     } catch (err) {
