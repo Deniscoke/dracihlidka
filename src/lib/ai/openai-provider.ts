@@ -12,6 +12,7 @@ import {
   MapMarkerData,
   CombatScene,
   CombatEnemy,
+  StoryBeat,
 } from "./provider";
 import type { CharacterDelta, NarrationConsequences } from "@/types";
 import { DH_LITE_RULES, DH_GM_INSTRUCTIONS, DH_PJ_PERSONALITY, DH_COMBAT_INSTRUCTIONS, DH_PARTY_INSTRUCTIONS } from "@/lib/dh-rules";
@@ -124,6 +125,7 @@ function buildSystemPrompt(req: NarrationRequest): string {
     `  consequences: { eventSummary: string, deltas: Array<{ characterName: string, xpDelta?: number, hpDelta?: number, addStatuses?: string[], removeStatuses?: string[], addInjuries?: string[], removeInjuries?: string[], addItems?: string[], removeItems?: string[], addNotes?: string[] }>, lootFound?: string[], combatLog?: string } | null`,
     `  mapLocation: { map: "world"|"ihienburgh", locationId: "id_ze_seznamu", locationName: "čitelný název" }`,
     `  mapMarkers: [{ id: "unikátní_id", type: "enemy"|"city"|"poi"|"quest"|"npc", name: "název", locationId: "id_místa", description: "krátký popis", active: true|false }]`,
+    `  storyBeat: { summary: "1-2 věty popis co se stalo", location: "název místa", importantNPCs: ["jméno1"], questUpdates: ["popis změny questu"], combatOutcome: "výsledek boje (pokud nastal)" } | null`,
     `- mapLocation musí vždy obsahovat aktuální polohu hráče (locationId ze seznamu lokací).`,
     `- mapMarkers: přidávej nepřátele, NPC, body zájmu, úkoly dynamicky dle děje. Typ "enemy" pro nepřátele, "npc" pro postavy, "poi" pro poklady/ruiny, "quest" pro úkoly, "city" pro města.`,
     `- V consequences.deltas uveď pouze změny pro existující postavy (použij přesná jména shora).`,
@@ -153,6 +155,23 @@ function buildUserMessage(req: NarrationRequest): string {
       (e: CompactNarrationEntry) => `- [${e.createdAt}] ${e.userInput} → ${e.narrationText.slice(0, 150)}`
     );
     sections.push(`Relevantní starší události:\n${relLines.join("\n")}`);
+  }
+
+  if (req.eventLog && req.eventLog.length > 0) {
+    const eventLines = req.eventLog.map((e) => {
+      try {
+        const beat = JSON.parse(e.content) as Partial<StoryBeat>;
+        const parts = [`[${e.createdAt.slice(0, 10)}] ${beat.summary ?? e.title}`];
+        if (beat.location) parts.push(`Místo: ${beat.location}`);
+        if (beat.importantNPCs?.length) parts.push(`NPC: ${beat.importantNPCs.join(", ")}`);
+        if (beat.questUpdates?.length) parts.push(`Questy: ${beat.questUpdates.join("; ")}`);
+        if (beat.combatOutcome) parts.push(`Boj: ${beat.combatOutcome}`);
+        return `- ${parts.join(" | ")}`;
+      } catch {
+        return `- ${e.title}: ${e.content.slice(0, 150)}`;
+      }
+    });
+    sections.push(`Strukturovaná historie příběhu (story beats):\n${eventLines.join("\n")}`);
   }
 
   sections.push(`Akce hráče: ${req.userInput}`);
@@ -256,6 +275,30 @@ function sanitizeCombatScene(raw: unknown): CombatScene | undefined {
   return { gridCols, gridRows, enemies, description };
 }
 
+// ---- Sanitize storyBeat from AI ----
+
+function sanitizeStoryBeat(raw: unknown): StoryBeat | null {
+  if (!raw || typeof raw !== "object") return null;
+  const obj = raw as Record<string, unknown>;
+  if (typeof obj.summary !== "string" || !obj.summary) return null;
+  const beat: StoryBeat = { summary: obj.summary.slice(0, 300) };
+  if (typeof obj.location === "string" && obj.location) beat.location = obj.location.slice(0, 100);
+  if (Array.isArray(obj.importantNPCs)) {
+    beat.importantNPCs = obj.importantNPCs
+      .filter((s: unknown) => typeof s === "string")
+      .slice(0, 10) as string[];
+  }
+  if (Array.isArray(obj.questUpdates)) {
+    beat.questUpdates = obj.questUpdates
+      .filter((s: unknown) => typeof s === "string")
+      .slice(0, 5) as string[];
+  }
+  if (typeof obj.combatOutcome === "string" && obj.combatOutcome) {
+    beat.combatOutcome = obj.combatOutcome.slice(0, 200);
+  }
+  return beat;
+}
+
 // ---- Provider ----
 
 export class OpenAIProvider implements NarrationProvider {
@@ -346,6 +389,7 @@ export class OpenAIProvider implements NarrationProvider {
       consequences: sanitizeConsequences(parsed.consequences),
       mapLocation,
       mapMarkers,
+      storyBeat: sanitizeStoryBeat(parsed.storyBeat) ?? null,
       combatInitiated: combatInitiated && !!combatScene,
       combatScene,
     };
