@@ -4,6 +4,15 @@ import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { campaignRepo, narrationRepo, characterRepo } from "@/lib/storage";
+import {
+  fetchCampaign,
+  fetchNarrations,
+  fetchCharacters,
+  insertNarration,
+  updateCharacter,
+  updateCampaignMemory,
+} from "@/lib/campaigns/campaign-content-live";
+import { createClient as createSupabaseClient } from "@/lib/supabase/client";
 import { RACE_ICONS, CLASS_ICONS } from "@/lib/dh-constants";
 import { Campaign, Character, NarrationEntry, NarrationConsequences, CharacterDelta } from "@/types";
 import type { MapLocation, MapMarkerData, CombatScene } from "@/lib/ai/provider";
@@ -13,6 +22,12 @@ import TalkingNarrator from "@/components/ui/TalkingNarrator";
 import CombatMap from "@/components/ui/CombatMap";
 import { getItemBonusText } from "@/lib/dh-items";
 import { calcOB, getArmorBonusFromInventory, getWeaponDamageFromInventory } from "@/lib/dh-combat";
+
+// True when Supabase env vars are present (inlined by Next.js at build time)
+const SB_AVAILABLE = !!(
+  process.env.NEXT_PUBLIC_SUPABASE_URL &&
+  (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY)
+);
 
 type NarrateMode = "local" | "ai";
 
@@ -27,9 +42,6 @@ type SpeechLangCode = (typeof SPEECH_LANGS)[number]["code"];
 
 const LS_SPEECH_LANG = "narrator_speech_lang";
 
-function getSavedSpeechLang(): SpeechLangCode {
-  return "cs-CZ";
-}
 
 // ---- SpeechRecognition type shim ----
 interface SpeechRecognitionResult {
@@ -83,7 +95,7 @@ export default function NarratePage() {
   const [lastConsequences, setLastConsequences] = useState<NarrationConsequences | null>(null);
 
   // STT state
-  const [speechLang, setSpeechLang] = useState<SpeechLangCode>(getSavedSpeechLang);
+  const [speechLang, setSpeechLang] = useState<SpeechLangCode>("cs-CZ");
   const [listening, setListening] = useState(false);
   const [sttSupported, setSttSupported] = useState(true);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
@@ -109,6 +121,9 @@ export default function NarratePage() {
   // Dice roll state — setLastDiceRoll is used by DiceRoller callback
   const [, setLastDiceRoll] = useState<string | null>(null);
 
+  // Load error — surfaced when Supabase returns auth/permission failures
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   // ---- Load persisted prefs from localStorage (client-only) ----
   useEffect(() => {
     const savedLang = localStorage.getItem(LS_SPEECH_LANG);
@@ -120,24 +135,66 @@ export default function NarratePage() {
     }
   }, []);
 
-  // ---- Data loading ----
+  // ---- Data loading — Supabase-first, localStorage fallback ----
+
+  function classifyLoadError(err: unknown): string {
+    if (!err || typeof err !== "object") return "Chyba pri načítaní dát.";
+    const e = err as { status?: number; code?: string; message?: string };
+    if (e.status === 401 || e.code === "PGRST301") return "Nie si prihlásený alebo platnosť session vypršala. Prihlás sa znovu.";
+    if (e.status === 403) return "Nemáš prístup k tejto kampani.";
+    return `Chyba pri načítaní dát: ${e.message ?? "neznáma chyba"}.`;
+  }
+
   const loadCampaign = async () => {
     if (!campaignId) return;
-    const c = await campaignRepo.getById(campaignId);
-    if (c) setCampaign(c);
+    if (SB_AVAILABLE) {
+      try {
+        const c = await fetchCampaign(campaignId);
+        setCampaign(c);
+        setLoadError(null);
+      } catch (err) {
+        console.error("[loadCampaign]", err);
+        setLoadError(classifyLoadError(err));
+      }
+    } else {
+      const c = await campaignRepo.getById(campaignId);
+      if (c) setCampaign(c);
+    }
   };
 
   const loadRecent = async () => {
     if (!campaignId) return;
-    const all = await narrationRepo.getAll({ campaignId } as Partial<NarrationEntry>);
-    const sorted = all.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-    setRecent(sorted.slice(0, 10));
+    if (SB_AVAILABLE) {
+      try {
+        const all = await fetchNarrations(campaignId);
+        setRecent(all.slice(0, 10));
+        setLoadError(null);
+      } catch (err) {
+        console.error("[loadRecent]", err);
+        setLoadError(classifyLoadError(err));
+      }
+    } else {
+      const all = await narrationRepo.getAll({ campaignId } as Partial<NarrationEntry>);
+      const sorted = all.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      setRecent(sorted.slice(0, 10));
+    }
   };
 
   const loadCharacters = async () => {
     if (!campaignId) return;
-    const chars = await characterRepo.getAll({ campaignId } as Partial<Character>);
-    setCharacters(chars);
+    if (SB_AVAILABLE) {
+      try {
+        const chars = await fetchCharacters(campaignId);
+        setCharacters(chars);
+        setLoadError(null);
+      } catch (err) {
+        console.error("[loadCharacters]", err);
+        setLoadError(classifyLoadError(err));
+      }
+    } else {
+      const chars = await characterRepo.getAll({ campaignId } as Partial<Character>);
+      setCharacters(chars);
+    }
   };
 
   useEffect(() => {
@@ -147,12 +204,45 @@ export default function NarratePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [campaignId]);
 
+  // ---- Realtime subscription — sync stav kampane pre všetkých hráčov ----
+  useEffect(() => {
+    if (!campaignId || !SB_AVAILABLE) return;
+    let sb: ReturnType<typeof createSupabaseClient>;
+    try {
+      sb = createSupabaseClient();
+    } catch {
+      return;
+    }
+
+    const channel = sb
+      .channel(`campaign-room:${campaignId}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "narrations", filter: `campaign_id=eq.${campaignId}` },
+        () => { loadRecent(); }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "characters", filter: `campaign_id=eq.${campaignId}` },
+        () => { loadCharacters(); }
+      )
+      .subscribe();
+
+    return () => { sb.removeChannel(channel); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [campaignId]);
+
   // ---- Apply character deltas from consequences ----
   async function applyCharacterDeltas(deltas: CharacterDelta[]) {
+    // Fetch fresh characters to avoid stale closure (race condition fix)
+    const currentChars = SB_AVAILABLE
+      ? await fetchCharacters(campaignId).catch((err) => { console.warn("[applyDeltas] fetchCharacters failed, using stale state:", err); return characters; })
+      : characters;
+
     for (const delta of deltas) {
       // Case-insensitive name matching (strip diacritics for tolerance)
       const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-      const match = characters.find((c) => normalize(c.name) === normalize(delta.characterName));
+      const match = currentChars.find((c) => normalize(c.name) === normalize(delta.characterName));
       if (!match) {
         console.log(`[consequences] Unknown character "${delta.characterName}", skipping`);
         continue;
@@ -199,10 +289,14 @@ export default function NarratePage() {
 
       if (Object.keys(updates).length > 0) {
         console.log(`[consequences] Updating "${match.name}":`, updates);
-        await characterRepo.update(match.id, updates);
+        if (SB_AVAILABLE) {
+          await updateCharacter(match.id, updates).catch(console.error);
+        } else {
+          await characterRepo.update(match.id, updates);
+        }
       }
     }
-    // Reload characters to reflect changes
+    // Reload characters to reflect changes (Realtime will also trigger this)
     await loadCharacters();
   }
 
@@ -219,7 +313,7 @@ export default function NarratePage() {
     setAiKeyMissing(false);
     // availableLoot sa nemazá — kumuluje sa
 
-    // Build recent entries for context (last 10 from localStorage)
+    // Build recent entries for context (last 10 — from Supabase or local fallback)
     const recentForContext = recent.slice(0, 10).map((entry) => ({
       userInput: entry.userInput,
       narrationText: entry.narrationText,
@@ -306,20 +400,32 @@ export default function NarratePage() {
       }
 
       if (campaignId) {
-        await narrationRepo.create({
-          campaignId,
-          mode: mode === "local" ? "mock" : "ai",
-          userInput: prompt.trim(),
-          narrationText: data.narration,
-          suggestedActions: data.suggestions ?? [],
-          consequences: consequences ?? undefined,
-        });
-
-        if (data.updatedMemorySummary) {
-          const updated = await campaignRepo.update(campaignId, {
-            memorySummary: data.updatedMemorySummary,
+        // Persist narration
+        if (SB_AVAILABLE) {
+          // Server already persisted via /api/narrate — just refresh list
+          // (avoids duplicate; server INSERT triggers Realtime which calls loadRecent)
+        } else {
+          await narrationRepo.create({
+            campaignId,
+            mode: mode === "local" ? "mock" : "ai",
+            userInput: prompt.trim(),
+            narrationText: data.narration,
+            suggestedActions: data.suggestions ?? [],
+            consequences: consequences ?? undefined,
           });
-          setCampaign(updated);
+        }
+
+        // Update memory summary
+        if (data.updatedMemorySummary) {
+          if (SB_AVAILABLE) {
+            // Server already updated campaigns.memory_summary — reflect locally
+            setCampaign(prev => prev ? { ...prev, memorySummary: data.updatedMemorySummary } : prev);
+          } else {
+            const updated = await campaignRepo.update(campaignId, {
+              memorySummary: data.updatedMemorySummary,
+            });
+            setCampaign(updated);
+          }
         }
 
         // Apply character deltas
@@ -327,7 +433,8 @@ export default function NarratePage() {
           await applyCharacterDeltas(consequences.deltas);
         }
 
-        loadRecent();
+        // In localStorage mode, manually refresh; in SB mode Realtime handles it
+        if (!SB_AVAILABLE) loadRecent();
       }
     } catch {
       setError("Nepodařilo se spojit se serverem.");
@@ -424,6 +531,13 @@ export default function NarratePage() {
         </div>
       </div>
 
+
+      {/* Load error banner — auth / permission failures */}
+      {loadError && (
+        <div className="bg-red-950/50 border border-red-700 rounded-lg p-3 mb-4">
+          <p className="text-sm text-red-300 font-medium">{loadError}</p>
+        </div>
+      )}
 
       {/* AI key missing banner */}
       {aiKeyMissing && (
@@ -616,20 +730,20 @@ export default function NarratePage() {
         </div>
       )}
 
-      {/* Loot — pretiahnite do inventára postavy (vpravo) */}
+      {/* Loot — přetáhni do inventáře postavy (vpravo) */}
       {availableLoot.length > 0 && (
         <div className="rounded-lg p-4 mb-4 border-2 border-dashed border-amber-700/50" style={{ background: "rgba(161,98,7,0.08)" }}>
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs text-amber-400">
-              🎁 Nalezená kořist — pretiahnite do inventára postavy vpravo
+              🎁 Nalezená kořist — přetáhni do inventáře postavy vpravo
             </p>
             <button
               type="button"
               onClick={() => setAvailableLoot([])}
               className="text-[10px] text-zinc-500 hover:text-zinc-400 transition-colors"
-              title="Zahodiť všetko (nechať na zemi)"
+              title="Zahodit vše (nechat na zemi)"
             >
-              Zahodiť všetko
+              Zahodit vše
             </button>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -753,7 +867,7 @@ export default function NarratePage() {
               </div>
               {characters.length === 0 ? (
                 <div className="border border-dashed border-zinc-800 rounded-xl p-4 text-center">
-                  <p className="text-zinc-600 text-xs">Žiadne postavy v kampani.</p>
+                  <p className="text-zinc-600 text-xs">Žádné postavy v kampani.</p>
                 </div>
               ) : (
                 <div className="space-y-3 overflow-y-auto pr-1 flex-1"
@@ -940,7 +1054,7 @@ function LiveCharCard({ character: c, onUpdate, canAcceptLoot, onLootDrop }: {
             <span className="text-[10px] text-zinc-700 italic">prázdný</span>
           )}
           {dragOver && (c.inventory ?? []).length === 0 && (
-            <span className="text-[10px] text-amber-500/80 italic">Pustite predmet sem</span>
+            <span className="text-[10px] text-amber-500/80 italic">Pusť předmět sem</span>
           )}
           {(c.inventory ?? []).map(item => (
             <span
@@ -961,7 +1075,7 @@ function LiveCharCard({ character: c, onUpdate, canAcceptLoot, onLootDrop }: {
         }} className="flex gap-1">
           <input
             value={newItem} onChange={e => setNewItem(e.target.value)}
-            placeholder="Pridať predmet…"
+            placeholder="Přidat předmět…"
             className="flex-1 text-[10px] bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/50"
           />
           <button type="submit" className="text-[10px] px-2 py-1 bg-zinc-700 hover:bg-zinc-600 rounded text-zinc-300 transition-colors">+</button>
