@@ -10,8 +10,17 @@ export interface Campaign {
   memorySummary?: string; // 1–3 sentence compressed memory, updated after each narration
   houseRules?: string; // user-provided campaign notes / house rules
   rulesPackText?: string; // user-editable plain-text rules context for AI
-  passwordHash?: string;  // PBKDF2 hash (base64) — app-level lock, not secure auth
-  passwordSalt?: string;  // salt (base64)
+  /** 6-char uppercase code for sharing; only returned for owner's own campaigns */
+  joinCode?: string;
+  /** Whether a join-password is set — never expose the raw hash to clients */
+  hasPassword?: boolean;
+  /**
+   * @deprecated Do not read from Supabase. Kept for localStorage backward-compat only.
+   * Use hasPassword to check if a password is required.
+   */
+  passwordHash?: string;
+  /** @deprecated See passwordHash */
+  passwordSalt?: string;
   createdAt: string;
   updatedAt: string;
 }

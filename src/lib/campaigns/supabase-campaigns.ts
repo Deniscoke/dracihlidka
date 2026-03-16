@@ -29,9 +29,13 @@ function supabaseCampaignToCampaign(row: {
   rules_pack_text: string | null;
   password_hash: string | null;
   password_salt: string | null;
+  join_code?: string | null;
+  is_public?: boolean | null;
   created_at: string;
   updated_at: string;
 }): Campaign {
+  // SECURITY: Never expose password_hash or password_salt to clients.
+  // Use hasPassword (bool) to indicate whether a join-password is set.
   return {
     id: row.id,
     name: row.name,
@@ -40,8 +44,8 @@ function supabaseCampaignToCampaign(row: {
     memorySummary: row.memory_summary ?? undefined,
     houseRules: row.house_rules ?? undefined,
     rulesPackText: row.rules_pack_text ?? undefined,
-    passwordHash: row.password_hash ?? undefined,
-    passwordSalt: row.password_salt ?? undefined,
+    joinCode: row.join_code ?? undefined,
+    hasPassword: !!row.password_hash,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -183,7 +187,7 @@ export async function joinCampaign(userId: string, campaignId: string): Promise<
   });
 
   if (memberErr) {
-    return { ok: false, error: "Nepodarilo sa pripojiť ku kampani." };
+    return { ok: false, error: "Nepodařilo se připojit ke kampani." };
   }
 
   return {
@@ -200,6 +204,74 @@ export async function joinCampaign(userId: string, campaignId: string): Promise<
       password_salt: campaign.password_salt,
       created_at: campaign.created_at,
       updated_at: campaign.updated_at,
+    }),
+  };
+}
+
+/**
+ * Join a campaign by its short 6-char join_code.
+ * Password verification happens in POST /api/campaigns/join — call that route
+ * for password-protected campaigns. This function handles the DB join only
+ * (used by the API route after password is verified).
+ */
+export async function joinCampaignByCode(
+  joinCode: string,
+  _userId: string // kept for API compat; server Supabase client uses JWT
+): Promise<{ ok: true; campaign: Campaign } | { ok: false; error: string }> {
+  const supabase = createClient();
+
+  const code = joinCode.trim().toUpperCase();
+
+  // RLS: "Authenticated can read campaigns" allows SELECT for any auth'd user
+  const { data: campaign, error: fetchErr } = await supabase
+    .from("campaigns")
+    .select("*")
+    .eq("join_code", code)
+    .maybeSingle();
+
+  if (fetchErr || !campaign) {
+    return { ok: false, error: "Kampaň s tímto kódem neexistuje." };
+  }
+
+  // Check if already member
+  const { data: { user } } = await supabase.auth.getUser();
+  const uid = user?.id ?? "";
+
+  const { data: existing } = await supabase
+    .from("campaign_members")
+    .select("id")
+    .eq("user_id", uid)
+    .eq("campaign_id", campaign.id)
+    .maybeSingle();
+
+  if (existing) {
+    return {
+      ok: true,
+      campaign: supabaseCampaignToCampaign({
+        ...campaign,
+        join_code: campaign.join_code ?? null,
+        is_public: campaign.is_public ?? null,
+      }),
+    };
+  }
+
+  // Insert membership
+  const { error: memberErr } = await supabase.from("campaign_members").insert({
+    user_id: uid,
+    campaign_id: campaign.id,
+    role: "member",
+  });
+
+  if (memberErr) {
+    return { ok: false, error: "Nepodařilo se připojit ke kampani." };
+  }
+
+  return {
+    ok: true,
+    campaign: supabaseCampaignToCampaign({
+      ...campaign,
+      join_code: campaign.join_code ?? null,
+      is_public: campaign.is_public ?? null,
     }),
   };
 }

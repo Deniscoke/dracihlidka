@@ -2,6 +2,7 @@ export {
   getMyCampaigns,
   createCampaign,
   joinCampaign,
+  joinCampaignByCode,
   getCampaignById,
   type CampaignWithRole,
   type CampaignMemberRole,
