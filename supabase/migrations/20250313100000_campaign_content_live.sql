@@ -9,7 +9,7 @@ create table if not exists narrations (
   mode text not null default 'ai' check (mode in ('mock', 'ai')),
   user_input text not null default '',
   narration_text text not null default '',
-  suggested_actions text[] default '{}',
+  suggested_actions text[] not null default '{}',
   consequences jsonb,
   created_at timestamptz default now()
 );
@@ -17,7 +17,8 @@ create table if not exists narrations (
 -- Postavy v kampani
 create table if not exists characters (
   id uuid primary key default gen_random_uuid(),
-  campaign_id uuid not null references campaigns(id) on delete cascade,
+  campaign_id uuid references campaigns(id) on delete cascade,
+  owner_id uuid references auth.users(id) on delete set null,
   name text not null,
   race text default '',
   class text default '',
@@ -41,7 +42,7 @@ create table if not exists characters (
 -- Sedenia
 create table if not exists sessions (
   id uuid primary key default gen_random_uuid(),
-  campaign_id uuid not null references campaigns(id) on delete cascade,
+  campaign_id uuid references campaigns(id) on delete cascade,
   title text not null default '',
   summary text default '',
   date date default current_date,
@@ -69,7 +70,7 @@ create table if not exists campaign_states (
 -- Memory entries (notes, lore…)
 create table if not exists memory_entries (
   id uuid primary key default gen_random_uuid(),
-  campaign_id uuid not null references campaigns(id) on delete cascade,
+  campaign_id uuid references campaigns(id) on delete cascade,
   session_id uuid references sessions(id) on delete set null,
   type text not null default 'note' check (type in ('note', 'event', 'lore', 'quest')),
   title text not null default '',
@@ -84,7 +85,14 @@ create index if not exists idx_characters_campaign on characters(campaign_id);
 create index if not exists idx_sessions_campaign on sessions(campaign_id);
 create index if not exists idx_memory_campaign on memory_entries(campaign_id);
 
--- RLS — len členovia kampane môžu čítať a písať
+-- RLS
+alter table narrations enable row level security;
+alter table characters enable row level security;
+alter table sessions enable row level security;
+alter table campaign_states enable row level security;
+alter table memory_entries enable row level security;
+
+-- narrations — len členovia kampane
 create policy "Members read narrations"
   on narrations for select using (
     auth.uid() in (select user_id from campaign_members where campaign_id = narrations.campaign_id)
@@ -102,23 +110,23 @@ create policy "Members delete narrations"
     auth.uid() in (select user_id from campaign_members where campaign_id = narrations.campaign_id)
   );
 
-create policy "Members read characters"
-  on characters for select using (
-    auth.uid() in (select user_id from campaign_members where campaign_id = characters.campaign_id)
-  );
+-- characters — len členovia kampane (owner pre UPDATE/DELETE)
 create policy "Members insert characters"
   on characters for insert with check (
     auth.uid() in (select user_id from campaign_members where campaign_id = characters.campaign_id)
   );
-create policy "Members update characters"
+create policy "Characters readable by all"
+  on characters for select using (true);
+create policy "Owner can update character"
   on characters for update using (
-    auth.uid() in (select user_id from campaign_members where campaign_id = characters.campaign_id)
+    (auth.uid() = owner_id) or (owner_id is null)
   );
-create policy "Members delete characters"
+create policy "Owner can delete character"
   on characters for delete using (
-    auth.uid() in (select user_id from campaign_members where campaign_id = characters.campaign_id)
+    (auth.uid() = owner_id) or (owner_id is null)
   );
 
+-- sessions
 create policy "Members read sessions"
   on sessions for select using (
     auth.uid() in (select user_id from campaign_members where campaign_id = sessions.campaign_id)
@@ -136,6 +144,7 @@ create policy "Members delete sessions"
     auth.uid() in (select user_id from campaign_members where campaign_id = sessions.campaign_id)
   );
 
+-- campaign_states
 create policy "Members read campaign_states"
   on campaign_states for select using (
     auth.uid() in (select user_id from campaign_members where campaign_id = campaign_states.campaign_id)
@@ -149,6 +158,7 @@ create policy "Members update campaign_states"
     auth.uid() in (select user_id from campaign_members where campaign_id = campaign_states.campaign_id)
   );
 
+-- memory_entries
 create policy "Members read memory_entries"
   on memory_entries for select using (
     auth.uid() in (select user_id from campaign_members where campaign_id = memory_entries.campaign_id)
@@ -165,12 +175,6 @@ create policy "Members delete memory_entries"
   on memory_entries for delete using (
     auth.uid() in (select user_id from campaign_members where campaign_id = memory_entries.campaign_id)
   );
-
-alter table narrations enable row level security;
-alter table characters enable row level security;
-alter table sessions enable row level security;
-alter table campaign_states enable row level security;
-alter table memory_entries enable row level security;
 
 -- Povolenie Realtime pre live updates
 alter publication supabase_realtime add table narrations;
