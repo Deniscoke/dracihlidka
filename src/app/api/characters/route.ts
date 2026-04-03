@@ -105,8 +105,23 @@ export async function POST(req: NextRequest) {
       xp,
     } = body;
 
+    // Basic input validation
+    const charName = typeof name === "string" ? name.trim() : "";
+    if (!charName) {
+      return NextResponse.json({ error: "Jméno postavy je povinné." }, { status: 400 });
+    }
+    if (charName.length > 100) {
+      return NextResponse.json({ error: "Jméno postavy je příliš dlouhé (max 100 znaků)." }, { status: 400 });
+    }
+
     // campaign_id must be UUID — "__roster__" is not valid, use null for roster
-    const dbCampaignId = campaignId === "__roster__" || !campaignId ? null : campaignId;
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const dbCampaignId =
+      !campaignId || campaignId === "__roster__"
+        ? null
+        : UUID_RE.test(campaignId)
+          ? campaignId
+          : null;
 
     const { data: char, error } = await supabase
       .from("characters")
@@ -114,7 +129,7 @@ export async function POST(req: NextRequest) {
         id: id ?? crypto.randomUUID(),
         campaign_id: dbCampaignId,
         owner_id: user.id,
-        name: name ?? "Bez mena",
+        name: charName || "Bez mena",
         race: race ?? "",
         class: cls ?? "",
         level: level ?? 1,

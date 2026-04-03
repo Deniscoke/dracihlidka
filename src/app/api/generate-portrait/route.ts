@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-
-const API_KEY = process.env.NARRATOR_AI_API_KEY ?? "";
+import { createClient } from "@/lib/supabase/server";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 interface PortraitRequest {
-  name:   string;
-  race:   string;
-  class:  string;
-  gender: string;
+  name?:   string;
+  race?:   string;
+  class?:  string;
+  gender?: string;
 }
 
 const RACE_DESC: Record<string, string> = {
@@ -29,8 +29,35 @@ const CLASS_DESC: Record<string, string> = {
 };
 
 export async function POST(req: NextRequest) {
-  if (!API_KEY) {
-    return NextResponse.json({ error: "API key not configured" }, { status: 503 });
+  // ---- Auth check — prevent unauthenticated DALL-E credit abuse ----
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  if (supabaseUrl && supabaseKey) {
+    try {
+      const supabase = await createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return NextResponse.json({ error: "Nepřihlášený uživatel." }, { status: 401 });
+      }
+      // Rate limit: 5 portrait generations per minute per user (DALL-E is expensive)
+      const rl = checkRateLimit(`portrait:${user.id}`, 5, 60_000);
+      if (!rl.ok) {
+        return NextResponse.json(
+          { error: `Příliš mnoho požadavků. Zkus to znovu za ${rl.retryAfter}s.` },
+          { status: 429, headers: { "Retry-After": String(rl.retryAfter) } }
+        );
+      }
+    } catch {
+      return NextResponse.json({ error: "Chyba autentizace." }, { status: 401 });
+    }
+  }
+
+  const apiKey = process.env.NARRATOR_AI_API_KEY;
+  if (!apiKey) {
+    return NextResponse.json(
+      { error: "OpenAI API kľúč nie je nastavený na serveri (NARRATOR_AI_API_KEY)." },
+      { status: 503 }
+    );
   }
 
   let body: PortraitRequest;
@@ -40,11 +67,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { name, race, class: cls, gender } = body;
-  if (!API_KEY) {
-    return NextResponse.json({ error: "OpenAI API kľúč nie je nastavený na serveri (NARRATOR_AI_API_KEY)." }, { status: 503 });
-  }
-  const usedKey = API_KEY;
+  // Truncate fields to prevent oversized/injected prompts
+  const name  = String(body.name  ?? "").slice(0, 60);
+  const race  = String(body.race  ?? "").slice(0, 40);
+  const cls   = String(body.class ?? "").slice(0, 40);
+  const gender = String(body.gender ?? "");
 
   const genderStr = gender === "Žena" ? "female" : "male";
   const raceStr   = RACE_DESC[race]  ?? race;
@@ -58,7 +85,7 @@ export async function POST(req: NextRequest) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${usedKey}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model: "dall-e-3",

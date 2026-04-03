@@ -192,15 +192,20 @@ function sanitizeConsequences(raw: unknown): NarrationConsequences | undefined {
     .map((d: unknown) => {
       const raw = d as Record<string, unknown>;
       const delta: CharacterDelta = { characterName: String(raw.characterName) };
-      if (typeof raw.xpDelta === "number") delta.xpDelta = raw.xpDelta;
-      if (typeof raw.hpDelta === "number") delta.hpDelta = raw.hpDelta;
-      if (Array.isArray(raw.addStatuses)) delta.addStatuses = raw.addStatuses.filter((s: unknown) => typeof s === "string") as string[];
-      if (Array.isArray(raw.removeStatuses)) delta.removeStatuses = raw.removeStatuses.filter((s: unknown) => typeof s === "string") as string[];
-      if (Array.isArray(raw.addInjuries)) delta.addInjuries = raw.addInjuries.filter((s: unknown) => typeof s === "string") as string[];
-      if (Array.isArray(raw.removeInjuries)) delta.removeInjuries = raw.removeInjuries.filter((s: unknown) => typeof s === "string") as string[];
-      if (Array.isArray(raw.addItems)) delta.addItems = raw.addItems.filter((s: unknown) => typeof s === "string") as string[];
-      if (Array.isArray(raw.removeItems)) delta.removeItems = raw.removeItems.filter((s: unknown) => typeof s === "string") as string[];
-      if (Array.isArray(raw.addNotes)) delta.addNotes = raw.addNotes.filter((s: unknown) => typeof s === "string") as string[];
+      // Clamp numeric deltas to sane game values — prevents AI hallucinating huge awards
+      if (typeof raw.xpDelta === "number") delta.xpDelta = Math.max(-500, Math.min(500, Math.round(raw.xpDelta)));
+      if (typeof raw.hpDelta === "number") delta.hpDelta = Math.max(-100, Math.min(100, Math.round(raw.hpDelta)));
+      // Cap string arrays: max 10 items, max 100 chars each
+      const strArr = (v: unknown) => Array.isArray(v)
+        ? (v.filter((s: unknown) => typeof s === "string") as string[]).slice(0, 10).map((s) => s.slice(0, 100))
+        : undefined;
+      if (Array.isArray(raw.addStatuses)) delta.addStatuses = strArr(raw.addStatuses);
+      if (Array.isArray(raw.removeStatuses)) delta.removeStatuses = strArr(raw.removeStatuses);
+      if (Array.isArray(raw.addInjuries)) delta.addInjuries = strArr(raw.addInjuries);
+      if (Array.isArray(raw.removeInjuries)) delta.removeInjuries = strArr(raw.removeInjuries);
+      if (Array.isArray(raw.addItems)) delta.addItems = strArr(raw.addItems);
+      if (Array.isArray(raw.removeItems)) delta.removeItems = strArr(raw.removeItems);
+      if (Array.isArray(raw.addNotes)) delta.addNotes = strArr(raw.addNotes);
       return delta;
     });
 

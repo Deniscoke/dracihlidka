@@ -18,9 +18,9 @@ export default function CampaignDetailPage() {
 
   useEffect(() => {
     if (!id) return;
-    setLoading(true);
 
     (async () => {
+      setLoading(true);
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setNotFound(true); setLoading(false); return; }

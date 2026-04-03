@@ -1,8 +1,8 @@
+// SECURITY NOTE: joinCampaign() and joinCampaignByCode() were removed — they bypassed
+// password verification entirely. Use POST /api/campaigns/join for all join operations.
 export {
   getMyCampaigns,
   createCampaign,
-  joinCampaign,
-  joinCampaignByCode,
   getCampaignById,
   type CampaignWithRole,
   type CampaignMemberRole,

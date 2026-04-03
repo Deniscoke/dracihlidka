@@ -13,15 +13,40 @@ export interface DHClassOption {
   theme: FancyCardTheme;
   role: string;
   dominant: string;
+  description: string;
 }
 
 const DH_CLASSES: DHClassOption[] = [
-  { name: "Válečník", class: "Válečník", race: "Člověk", gender: "Muž", img: "class-valecnik.png", theme: "violet", role: "Mistr meče", dominant: "SIL + ODO" },
-  { name: "Kouzelník", class: "Kouzelník", race: "Elf", gender: "Muž", img: "class-kouzelnik.png", theme: "amber", role: "Mistr magie", dominant: "INT + CHA" },
-  { name: "Hraničář", class: "Hraničář", race: "Člověk", gender: "Muž", img: "class-hranicar.png", theme: "emerald", role: "Stopár, prežitie", dominant: "OBR + INT" },
-  { name: "Alchymista", class: "Alchymista", race: "Trpaslík", gender: "Muž", img: "class-alchymista.png", theme: "violet", role: "Lektváre, výbušniny", dominant: "OBR + ODO" },
-  { name: "Zloděj", class: "Zloděj", race: "Půlčík", gender: "Muž", img: "class-zlodej.png", theme: "emerald", role: "Plíženie, zákeřný útok", dominant: "OBR + CHA" },
-  { name: "Klerik", class: "Klerik", race: "Člověk", gender: "Žena", img: "class-klerik.png", theme: "gold", role: "Léčenie, odhánění nemrtvých", dominant: "INT + CHA" },
+  {
+    name: "Válečník", class: "Válečník", race: "Člověk", gender: "Muž",
+    img: "class-valecnik.png", theme: "violet", role: "Mistr meče", dominant: "SIL + ODO",
+    description: "Mistr bojového umění a těžké zbroje. Nosí brnění bez trestu, od 5. úrovně útočí dvakrát za kolo. Spoléhá na sílu a výdrž — je to skutečný frontliner, který stráží spolubojovníky.",
+  },
+  {
+    name: "Kouzelník", class: "Kouzelník", race: "Elf", gender: "Muž",
+    img: "class-kouzelnik.png", theme: "amber", role: "Mistr magie", dominant: "INT + CHA",
+    description: "Vládne kouzly prostřednictvím many. Studuje přírodní zákony a často uvažuje analyticky. Při boji se drží v ústraní, připravuje účinná kouzla a má tendenci se vyhýbat přímému kontaktu.",
+  },
+  {
+    name: "Hraničář", class: "Hraničář", race: "Člověk", gender: "Muž",
+    img: "class-hranicar.png", theme: "emerald",     role: "Stopař, přežití", dominant: "OBR + INT",
+    description: "Stopař a expert na přežití v přírodě. Umí stopovat, skrýt se a udílet silný útok ze zálohy (+1k6). Často působí samotářsky, preferuje lesy a hranici mezi civilizací a divočinou.",
+  },
+  {
+    name: "Alchymista", class: "Alchymista", race: "Trpaslík", gender: "Muž",
+    img: "class-alchymista.png", theme: "violet",     role: "Lektvary, výbušniny", dominant: "OBR + ODO",
+    description: "Vyrábí lektvary a výbušniny. Bomba udílí 2k6 poškození a může být rozhodující v boji. Často posedlý experimentováním, obezřetný, ale při ohrožení rychle reaguje a vyhodí flašku.",
+  },
+  {
+    name: "Zloděj", class: "Zloděj", race: "Půlčík", gender: "Muž",
+    img: "class-zlodej.png", theme: "emerald", role: "Plíženie, zákeřný útok", dominant: "OBR + CHA",
+    description: "Mistr plížení a zákeřného útoku (+2k6 ze zálohy). Skrývá se ve stínech, otevírá zámky a často kalkuluje riziko. Může působit lehkovážně, ale při misi je koncentrovaný a precizní.",
+  },
+  {
+    name: "Klerik", class: "Klerik", race: "Člověk", gender: "Žena",
+    img: "class-klerik.png", theme: "gold", role: "Léčenie, odhánění nemrtvých", dominant: "INT + CHA",
+    description: "Léčí spojence (1k6+CHA) a odhání nemrtvé. Slouží božstvu nebo vyššímu cíli. Zpravidla pokojná a soucitná, ale v boji proti nečistým silám je neoblomná.",
+  },
 ];
 
 export interface ClassSelectorProps {
@@ -54,12 +79,12 @@ export function ClassSelector({ mode = "create", onSelect, onCancel }: ClassSele
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-lg font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>
-              {mode === "levelup" ? "Postup postavy" : "Výber povolania"}
+              {mode === "levelup" ? "Postup postavy" : "Výběr povolání"}
             </h1>
             <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
               {mode === "levelup"
-                ? "Podľa DH-LITE: pri levelupe +1k6 HP a +1 k jednému atribútu dle povolania."
-                : "Vyber si povolanie pre novú postavu. DH-LITE — 6 tried."}
+                ? "Podle DH-LITE: při levelu +1k6 HP a +1 k jednomu atributu dle povolání."
+                : "Vyber si povolání pro novou postavu. DH-LITE — 6 tříd."}
             </p>
           </div>
           <button
@@ -67,7 +92,7 @@ export function ClassSelector({ mode = "create", onSelect, onCancel }: ClassSele
             className="text-sm px-3 py-1.5 rounded-lg transition-colors"
             style={{ color: "var(--text-muted)" }}
           >
-            ← Späť
+            ← Zpět
           </button>
         </div>
       </div>
@@ -92,31 +117,49 @@ export function ClassSelector({ mode = "create", onSelect, onCancel }: ClassSele
                 boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
               }}
             >
-              <div className="relative z-10 flex gap-4 p-5">
-                {/* Portrait */}
-                <div className="flex-shrink-0 w-20 h-24 rounded-lg overflow-hidden transition-colors" style={{ border: `1px solid ${BORDER_COLOR[cls.theme]}` }}>
-                  <img
-                    src={`/ilustrations/${cls.img}`}
-                    alt={cls.name}
-                    className="w-full h-full object-cover object-top"
-                  />
+              <div className="relative z-10 flex flex-col">
+                <div className="flex gap-4 p-5">
+                  {/* Portrait */}
+                  <div className="flex-shrink-0 w-20 h-24 rounded-lg overflow-hidden transition-colors" style={{ border: `1px solid ${BORDER_COLOR[cls.theme]}` }}>
+                    <img
+                      src={`/ilustrations/${cls.img}`}
+                      alt={cls.name}
+                      className="w-full h-full object-cover object-top"
+                    />
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-base tracking-tight transition-colors" style={{ color: "var(--text-primary)" }}>
+                      {cls.name}
+                    </p>
+                    <p className="text-[11px] mt-0.5 uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
+                      {cls.role}
+                    </p>
+                    <p className="text-[10px] mt-2 font-mono" style={{ color: "var(--accent-gold)" }}>
+                      {cls.dominant}
+                    </p>
+                    <p className="text-[10px] mt-1" style={{ color: "var(--text-dim)" }}>
+                      {cls.race} · {cls.gender}
+                    </p>
+                  </div>
                 </div>
 
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-base tracking-tight transition-colors" style={{ color: "var(--text-primary)" }}>
-                    {cls.name}
-                  </p>
-                  <p className="text-[11px] mt-0.5 uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
-                    {cls.role}
-                  </p>
-                  <p className="text-[10px] mt-2 font-mono" style={{ color: "var(--accent-gold)" }}>
-                    {cls.dominant}
-                  </p>
-                  <p className="text-[10px] mt-1" style={{ color: "var(--text-dim)" }}>
-                    {cls.race} · {cls.gender}
-                  </p>
+                {/* Rozbalený popis pri hover */}
+                <div
+                  className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-[grid-template-rows] duration-300 ease-out"
+                  style={{ borderTop: `1px solid ${BORDER_COLOR[cls.theme]}33` }}
+                >
+                  <div className="overflow-hidden">
+                    <p className="px-5 pb-4 pt-0 text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+                      {cls.description}
+                    </p>
+                  </div>
                 </div>
+
+                <p className="px-5 pb-3 text-[10px]" style={{ color: "var(--text-dim)" }}>
+                  Přejeď myší pro popis · Klikni pro tvorbu
+                </p>
               </div>
             </div>
           ))}

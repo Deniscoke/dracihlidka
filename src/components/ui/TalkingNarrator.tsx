@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
 
 // OpenAI TTS voices (marin/cedar recommended)
 const TTS_VOICES = [
-  { id: "marin", label: "Marin (odporúčané)" },
-  { id: "cedar", label: "Cedar (odporúčané)" },
+  { id: "marin", label: "Marin (doporučené)" },
+  { id: "cedar", label: "Cedar (doporučené)" },
   { id: "onyx", label: "Onyx" },
   { id: "sage", label: "Sage" },
   { id: "coral", label: "Coral" },
@@ -40,7 +40,6 @@ export default function TalkingNarrator({ text, compact, speechLang = "cs-CZ", a
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const lastAutoPlayedRef = useRef<string>("");
   const handleSpeakRef = useRef<() => Promise<void>>(() => Promise.resolve());
-  handleSpeakRef.current = handleSpeak;
 
   // Auto-play: keď príde nový text od narratora, automaticky ho prečítať
   useEffect(() => {
@@ -74,7 +73,7 @@ export default function TalkingNarrator({ text, compact, speechLang = "cs-CZ", a
     if (!autoPlay || !text.trim() || text === lastAutoPlayedRef.current) return;
     lastAutoPlayedRef.current = text;
     const t = setTimeout(() => {
-      handleSpeak();
+      handleSpeakRef.current();
     }, 300);
     return () => clearTimeout(t);
   }, [text, autoPlay]);
@@ -153,6 +152,13 @@ export default function TalkingNarrator({ text, compact, speechLang = "cs-CZ", a
     setSpeaking(true);
   }
 
+  // Keep ref updated with latest handleSpeak closure after every render
+  // useLayoutEffect runs synchronously after DOM mutations, before useEffect — ref is
+  // always fresh by the time the auto-play effects fire.
+  useLayoutEffect(() => {
+    handleSpeakRef.current = handleSpeak;
+  });
+
   function handleVoiceChange(voiceId: string) {
     setSelectedVoice(voiceId);
     localStorage.setItem(LS_TTS_VOICE, voiceId);
@@ -176,7 +182,7 @@ export default function TalkingNarrator({ text, compact, speechLang = "cs-CZ", a
           <span className="opacity-80">
             {loading ? "⏳" : speaking ? "⏹" : "▶"}
           </span>
-          {loading ? "Generujem…" : speaking ? "Zastaviť" : "Prehrať"}
+          {loading ? "Generuji…" : speaking ? "Zastavit" : "Přehrát"}
         </button>
         {usePremiumTts !== false && (
           <select

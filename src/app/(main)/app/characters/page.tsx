@@ -64,7 +64,7 @@ export default function CharactersGlobalPage() {
       characterRepo.getAll().then(setCharacters);
     }
   };
-  useEffect(() => { reload(); }, []);
+  useEffect(() => { void (async () => { await reload(); })(); }, []);
 
   const getCampaignName = (id: string) =>
     id === ROSTER_CAMPAIGN_ID ? "Roster" : (campaigns.find((c) => c.id === id)?.name ?? id.slice(0, 8));

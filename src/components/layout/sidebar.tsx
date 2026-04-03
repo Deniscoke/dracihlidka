@@ -6,11 +6,11 @@ import { AuthButton } from "@/components/auth/AuthButton";
 
 const NAV_ITEMS = [
   { href: "/app",           label: "Domov",      icon: "🏠", exact: true  },
-  { href: "/app/campaigns",  label: "Kampane",   icon: "📋", exact: false },
+  { href: "/app/campaigns",  label: "Kampaně",   icon: "📋", exact: false },
   { href: "/app/characters", label: "Postavy",  icon: "👥", exact: false },
   { href: "/app/profile",    label: "Profil",   icon: "👤", exact: false },
-  { href: "/app/sien-slavy", label: "Sieň slávy", icon: "⭐", exact: false },
-  { href: "/app/rules",      label: "Pravidlá", icon: "📄", exact: false },
+  { href: "/app/sien-slavy", label: "Síň slávy", icon: "⭐", exact: false },
+  { href: "/app/rules",      label: "Pravidla", icon: "📄", exact: false },
 ];
 
 export function Sidebar() {
@@ -58,7 +58,7 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* Odhlásenie */}
+      {/* Odhlášení */}
       <div className="mt-auto pt-4" style={{ borderTop: "1px solid var(--border-subtle)" }}>
         <AuthButton />
       </div>

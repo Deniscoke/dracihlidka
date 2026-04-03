@@ -240,24 +240,27 @@ export async function insertSession(s: Omit<Session, "id" | "createdAt">): Promi
  *  Nikdy nevracia password_hash ani password_salt. */
 export async function fetchCampaign(campaignId: string): Promise<import("@/types").Campaign | null> {
   const supabase = createClient();
+  // Intentionally excludes password_hash/password_salt — never send credential material to client.
   const { data, error } = await supabase
     .from("campaigns")
-    .select("id, name, description, ruleset_id, memory_summary, house_rules, rules_pack_text, password_hash, created_at, updated_at")
+    .select("id, name, description, ruleset_id, memory_summary, house_rules, rules_pack_text, created_at, updated_at")
     .eq("id", campaignId)
     .single();
   if (error) throw error;
   if (!data) return null;
+  const row = data as Record<string, unknown>;
   return {
-    id: data.id,
-    name: data.name,
-    description: data.description ?? "",
-    rulesetId: data.ruleset_id ?? "generic",
-    memorySummary: data.memory_summary ?? undefined,
-    houseRules: data.house_rules ?? undefined,
-    rulesPackText: data.rules_pack_text ?? undefined,
-    hasPassword: !!(data as Record<string, unknown>).password_hash,
-    createdAt: data.created_at,
-    updatedAt: data.updated_at,
+    id: row.id as string,
+    name: row.name as string,
+    description: (row.description as string | null) ?? "",
+    rulesetId: (row.ruleset_id as string | null) ?? "generic",
+    memorySummary: (row.memory_summary as string | null) ?? undefined,
+    houseRules: (row.house_rules as string | null) ?? undefined,
+    rulesPackText: (row.rules_pack_text as string | null) ?? undefined,
+    // hasPassword is not returned here — narrate page does not need it.
+    // For the campaigns list (which shows lock icons), getMyCampaigns() supplies it.
+    createdAt: row.created_at as string,
+    updatedAt: row.updated_at as string,
   };
 }
 

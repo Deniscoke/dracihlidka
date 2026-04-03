@@ -22,27 +22,27 @@ function SignOutButton() {
   );
 }
 
+// Computed once at module level — Next.js inlines NEXT_PUBLIC_ env vars at build time
+const SB_CONFIGURED = !!(
+  process.env.NEXT_PUBLIC_SUPABASE_URL &&
+  (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY)
+);
+
 export function AuthButton() {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [supabaseOk, setSupabaseOk] = useState(false);
+  // Initialize from build-time config — no synchronous setState needed in the effect
+  const [loading, setLoading] = useState(SB_CONFIGURED);
+  const [supabaseOk, setSupabaseOk] = useState(SB_CONFIGURED);
 
   useEffect(() => {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key =
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-    if (!url || !key) {
-      setLoading(false);
-      return;
-    }
-    setSupabaseOk(true);
+    if (!SB_CONFIGURED) return;
 
     let supabase;
     try {
       supabase = createClient();
     } catch {
-      setLoading(false);
+      // Defer setState to avoid synchronous state update in effect body
+      void Promise.resolve().then(() => { setLoading(false); setSupabaseOk(false); });
       return;
     }
     supabase.auth.getUser().then(({ data: { user } }) => {

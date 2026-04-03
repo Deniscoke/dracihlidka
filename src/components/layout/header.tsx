@@ -5,10 +5,10 @@ import { AuthButton } from "@/components/auth/AuthButton";
 
 const ROUTE_TITLES: Record<string, string> = {
   "/app": "Dračí Hlídka",
-  "/app/campaigns": "Kampane",
+  "/app/campaigns": "Kampaně",
   "/app/profile": "Profil",
-  "/app/sien-slavy": "Sieň slávy",
-  "/app/rules": "Pravidlá",
+  "/app/sien-slavy": "Síň slávy",
+  "/app/rules": "Pravidla",
 };
 
 export function Header() {
@@ -17,7 +17,7 @@ export function Header() {
   const title =
     ROUTE_TITLES[pathname] ??
     (pathname.includes("/narrate")
-      ? "Rozprávanie"
+        ? "Vyprávění"
       : pathname.includes("/characters")
         ? "Postavy"
         : pathname.includes("/sessions")

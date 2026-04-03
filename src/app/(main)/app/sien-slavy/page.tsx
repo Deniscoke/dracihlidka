@@ -28,7 +28,7 @@ export default function SienSlavyPage() {
   useEffect(() => {
     fetch("/api/hall-of-fame")
       .then((r) => {
-        if (!r.ok) throw new Error(r.status === 503 ? "Supabase nie je nakonfigurovaný" : "Chyba načítania");
+        if (!r.ok) throw new Error(r.status === 503 ? "Supabase není nakonfigurován" : "Chyba načítání");
         return r.json();
       })
       .then((data) => {
@@ -45,7 +45,7 @@ export default function SienSlavyPage() {
   if (loading) {
     return (
       <div className="max-w-3xl">
-        <p className="text-sm" style={{ color: "var(--text-muted)" }}>Načítavam sieň slávy…</p>
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>Načítávám síň slávy…</p>
       </div>
     );
   }
@@ -65,18 +65,18 @@ export default function SienSlavyPage() {
 
   return (
     <div className="max-w-3xl">
-      <h1 className="text-xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>Sieň slávy</h1>
+      <h1 className="text-xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>Síň slávy</h1>
       <p className="text-sm mb-8" style={{ color: "var(--text-muted)" }}>
-        Všetci hráči, ktorí sa kedy prihlásili, a ich postavy.
+        Všichni hráči, kteří se kdy přihlásili, a jejich postavy.
       </p>
 
       {entries.length === 0 ? (
         <div className="rounded-xl p-6 dh-card" style={{ borderStyle: "dashed" }}>
           <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-            Zatiaľ žiadni hráči. Prihlás sa cez Google a budeš prvý v sieni slávy!
+            Zatím žádní hráči. Přihlas se přes Google a budeš první v síni slávy!
           </p>
           <Link href="/" className="inline-block mt-4 text-sm" style={{ color: "var(--accent-gold)" }}>
-            Prihlásiť sa →
+            Přihlásit se →
           </Link>
         </div>
       ) : (
@@ -120,7 +120,7 @@ export default function SienSlavyPage() {
 
       <div className="mt-8">
         <Link href="/app" className="text-sm" style={{ color: "var(--text-muted)" }}>
-          ← Späť na domov
+          ← Zpět na domov
         </Link>
       </div>
     </div>

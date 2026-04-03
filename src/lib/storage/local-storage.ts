@@ -35,11 +35,22 @@ function getStorage(): StorageSchema {
   const raw = localStorage.getItem(key);
   if (!raw) return initStorage();
 
-  const parsed: StorageSchema = JSON.parse(raw);
-  if (parsed.version < CURRENT_SCHEMA_VERSION) {
-    return migrateSchema(parsed);
+  try {
+    const parsed: StorageSchema = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || typeof parsed.version !== "number") {
+      console.warn("[storage] Corrupt schema detected, resetting to empty.");
+      return initStorage();
+    }
+    if (parsed.version < CURRENT_SCHEMA_VERSION) {
+      return migrateSchema(parsed);
+    }
+    return parsed;
+  } catch (e) {
+    console.warn("[storage] Failed to parse localStorage data, resetting:", e);
+    // Remove the corrupt key so the next call gets a clean schema
+    try { localStorage.removeItem(key); } catch { /* ignore */ }
+    return initStorage();
   }
-  return parsed;
 }
 
 function saveStorage(data: StorageSchema): void {

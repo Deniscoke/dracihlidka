@@ -220,7 +220,7 @@ export function DHCharacterSheet({
       if (!res.ok) setPortraitError(data.error ?? "Chyba generovania");
       else setPortraitUrl(data.url);
     } catch {
-      setPortraitError("Nepodarilo sa spojiť so serverom.");
+      setPortraitError("Nepodařilo se spojit se serverem.");
     } finally {
       setPortraitLoading(false);
     }
@@ -239,7 +239,7 @@ export function DHCharacterSheet({
       if (!res.ok) setPortraitError(data.error ?? "Chyba generovania");
       else         setPortraitUrl(data.url);
     } catch {
-      setPortraitError("Nepodarilo sa spojiť so serverom.");
+      setPortraitError("Nepodařilo se spojit se serverem.");
     } finally {
       setPortraitLoading(false);
     }
@@ -265,12 +265,12 @@ export function DHCharacterSheet({
           </div>
           <button type="button" onClick={onCancel}
             className="text-zinc-600 hover:text-zinc-400 text-sm border border-zinc-800 hover:border-zinc-600 px-3 py-1.5 rounded transition-colors"
-          >← Späť</button>
+          >← Zpět</button>
         </div>
 
         {/* Creation mode: Manual / Random */}
         <div className="mb-6 p-4 rounded-xl border border-zinc-800 bg-zinc-900/50">
-          <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-2">Spôsob tvorby</p>
+          <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-2">Způsob tvorby</p>
           <div className="flex gap-2">
             <button
               type="button"
@@ -302,7 +302,7 @@ export function DHCharacterSheet({
               disabled={portraitLoading}
               className="w-full mt-3 py-3 rounded-lg bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-black font-semibold text-sm tracking-wider uppercase transition-all"
             >
-              {portraitLoading ? "Generujem postavu + DALL·E 3…" : "✦ Vygenerovať postavu (rasa, povolanie, vlastnosti, AI portrét)"}
+              {portraitLoading ? "Generuji postavu + DALL·E 3…" : "✦ Vygenerovat postavu (rasa, povolání, vlastnosti, AI portrét)"}
             </button>
           )}
         </div>
@@ -371,7 +371,7 @@ export function DHCharacterSheet({
                 className={`w-full py-1.5 rounded text-xs font-semibold tracking-wider uppercase transition-all disabled:opacity-40
                   ${portraitUrl ? "border border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200" : FORM_BTN}`}
               >
-                {portraitLoading ? "Generujem…" : portraitUrl ? "↻ Nový portrét" : "✦ AI portrét (DALL·E 3)"}
+                {portraitLoading ? "Generuji…" : portraitUrl ? "↻ Nový portrét" : "✦ AI portrét (DALL·E 3)"}
               </button>
               {portraitError && <p className="text-[10px] text-red-400 mt-1 text-center">{portraitError}</p>}
             </div>
@@ -379,9 +379,9 @@ export function DHCharacterSheet({
             {/* Name + NPC */}
             <div className="px-3 pb-3 space-y-2">
               <div>
-                <label className="block text-[10px] text-zinc-500 uppercase tracking-widest mb-1">Meno postavy</label>
+                <label className="block text-[10px] text-zinc-500 uppercase tracking-widest mb-1">Jméno postavy</label>
                 <input value={name} onChange={e => setName(e.target.value)} required
-                  placeholder="Zadaj meno…"
+                  placeholder="Zadej jméno…"
                   className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-amber-500"
                 />
               </div>
@@ -552,15 +552,15 @@ export function DHCharacterSheet({
         {/* Actions */}
         <div className="flex gap-3 mt-5">
           <button type="submit" className={`flex-1 py-3 rounded font-semibold text-sm tracking-widest uppercase transition-all ${FORM_BTN}`}>
-            {clsIcon} Vytvoriť postavu
+            {clsIcon} Vytvořit postavu
           </button>
           <button type="button" onClick={onCancel}
             className="px-5 py-3 rounded border border-zinc-700 hover:border-zinc-500 text-zinc-400 hover:text-zinc-200 text-sm transition-colors"
-          >Zrušiť</button>
+          >Zrušit</button>
         </div>
 
         <p className="text-[10px] text-zinc-700 mt-3 text-center">
-          Podľa DH-LITE pravidiel · základ rasy + 20 bodov + dominantné bonusy povolania.
+          Podle DH-LITE pravidel · základ rasy + 20 bodů + dominantní bonusy povolání.
         </p>
 
       </form>

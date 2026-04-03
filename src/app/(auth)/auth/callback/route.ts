@@ -1,10 +1,25 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
+/** Ensure the redirect target is a safe relative path (no open redirects). */
+function sanitizeNext(next: string | null): string {
+  const raw = next ?? "/app";
+  // Must start with exactly one slash and must not be a protocol-relative URL
+  // e.g. "//evil.com" or "https://evil.com" are rejected → fall back to /app
+  if (!raw.startsWith("/") || raw.startsWith("//")) return "/app";
+  // Strip any non-path characters that could confuse parsers
+  try {
+    const parsed = new URL(raw, "https://placeholder.local");
+    return parsed.pathname + (parsed.search ?? "") + (parsed.hash ?? "");
+  } catch {
+    return "/app";
+  }
+}
+
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/app";
+  const next = sanitizeNext(searchParams.get("next"));
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key =

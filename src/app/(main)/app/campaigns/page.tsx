@@ -280,6 +280,14 @@ export default function CampaignsPage() {
 
   async function handleSaveEdit() {
     if (!editingId || !editName.trim()) return;
+    if (useSupabase && user) {
+      // Persist to Supabase — localStorage update alone would be lost on next reload
+      const supabase = createClient();
+      await supabase
+        .from("campaigns")
+        .update({ name: editName.trim(), description: editDesc.trim(), updated_at: new Date().toISOString() })
+        .eq("id", editingId);
+    }
     await campaignRepo.update(editingId, {
       name: editName.trim(),
       description: editDesc.trim(),

@@ -4,6 +4,8 @@
 // ============================================================
 
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 const OPENAI_TTS_URL = "https://api.openai.com/v1/audio/speech";
 
@@ -16,6 +18,30 @@ function isValidVoice(v: string): v is VoiceId {
 }
 
 export async function POST(req: NextRequest) {
+  // ---- Auth check — prevent unauthenticated credit abuse ----
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  if (supabaseUrl && supabaseKey) {
+    try {
+      const supabase = await createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return NextResponse.json({ error: "Nepřihlášený uživatel." }, { status: 401 });
+      }
+      // Rate limit: 20 TTS requests per minute per user
+      const rl = checkRateLimit(`tts:${user.id}`, 20, 60_000);
+      if (!rl.ok) {
+        return NextResponse.json(
+          { error: `Příliš mnoho požadavků. Zkus to znovu za ${rl.retryAfter}s.` },
+          { status: 429, headers: { "Retry-After": String(rl.retryAfter) } }
+        );
+      }
+    } catch {
+      // If Supabase client creation fails (misconfigured), fail safely
+      return NextResponse.json({ error: "Chyba autentizace." }, { status: 401 });
+    }
+  }
+
   const apiKey = process.env.NARRATOR_AI_API_KEY;
   if (!apiKey) {
     return NextResponse.json(

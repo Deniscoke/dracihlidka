@@ -6,6 +6,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { LocalProvider } from "@/lib/ai/local-provider";
 import { OpenAIProvider } from "@/lib/ai/openai-provider";
 import type { NarrationRequest, NarrationProvider, CompactNarrationEntry, CharacterSnapshot, EventLogEntry } from "@/lib/ai/provider";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { validateDiceRolls, validateNarrateBody, NARRATE_LIMITS, type DiceRollRecord } from "@/lib/narrate-validation";
 
 // ---- Supabase server client — lazy, dynamic (requires next/headers) ----
 async function loadServerSupabase() {
@@ -18,12 +20,6 @@ async function loadServerSupabase() {
 }
 
 // ---- Request body — tolerant shape ----
-interface DiceRollRecord {
-  diceType: "d6" | "d20";
-  result: number;
-  isCritical: boolean;
-  isBonusRoll: boolean;
-}
 
 interface RequestBody {
   prompt?: string;
@@ -48,41 +44,6 @@ interface RequestBody {
   locale?: string;
 }
 
-// ---- Dice roll sequence validation ----
-// Rule: a bonus roll (isBonusRoll=true) is only valid if preceded by a
-// critical first roll (isCritical=true, isBonusRoll=false).
-// This cannot be enforced purely in the UI (DevTools can fabricate requests).
-function validateDiceRolls(rolls: DiceRollRecord[]): { ok: true } | { ok: false; error: string } {
-  if (!rolls.length) return { ok: true };
-
-  const bonusRolls = rolls.filter((r) => r.isBonusRoll);
-  if (bonusRolls.length === 0) return { ok: true };
-
-  // There must be exactly one bonus roll and it must follow a critical first roll
-  if (bonusRolls.length > 1) {
-    return { ok: false, error: "Neplatná sekvence hodů kostkou: více bonusových hodů." };
-  }
-
-  const criticalFirstRoll = rolls.find((r) => r.isCritical && !r.isBonusRoll);
-  if (!criticalFirstRoll) {
-    return { ok: false, error: "Neplatná sekvence hodů kostkou: bonusový hod bez předchozího kritického hodu." };
-  }
-
-  // The bonus roll must use the same dice type as the critical
-  const bonus = bonusRolls[0];
-  if (bonus.diceType !== criticalFirstRoll.diceType) {
-    return { ok: false, error: "Neplatná sekvence hodů kostkou: bonusový hod použil jiný typ kostky." };
-  }
-
-  // Sanity: isCritical must match actual roll value
-  const criticalThreshold = criticalFirstRoll.diceType === "d6" ? 6 : 20;
-  if (criticalFirstRoll.result !== criticalThreshold) {
-    return { ok: false, error: "Neplatná sekvence hodů kostkou: označený kritický hod neodpovídá hodnotě." };
-  }
-
-  return { ok: true };
-}
-
 const localProvider = new LocalProvider();
 
 // Lazily created — only when AI key is available
@@ -104,25 +65,6 @@ function getSupabaseEnv(): { url: string; key: string } | null {
   return null;
 }
 
-// ---- Structured validation ----
-function validateBody(body: RequestBody): { ok: true; prompt: string; campaignId: string } | { ok: false; error: string; missingFields: string[] } {
-  const prompt = (body.prompt || body.userInput || "").trim();
-  const campaignId = (body.campaignId || "").trim();
-  const missing: string[] = [];
-
-  if (!prompt) missing.push("prompt");
-  if (!campaignId) missing.push("campaignId");
-
-  if (missing.length > 0) {
-    return {
-      ok: false,
-      error: `Chybějící povinná pole: ${missing.join(", ")}`,
-      missingFields: missing,
-    };
-  }
-
-  return { ok: true, prompt, campaignId };
-}
 
 export async function POST(request: NextRequest) {
   let body: RequestBody;
@@ -139,7 +81,7 @@ export async function POST(request: NextRequest) {
   }
 
   // ---- Validate required fields ----
-  const validation = validateBody(body);
+  const validation = validateNarrateBody(body as Record<string, unknown>);
   if (!validation.ok) {
     console.warn("[narrate] Validation failed:", validation);
     return NextResponse.json(
@@ -151,7 +93,14 @@ export async function POST(request: NextRequest) {
   const { prompt, campaignId } = validation;
 
   // ---- Validate dice roll sequence (server-side, cannot be bypassed by UI) ----
-  const diceRolls: DiceRollRecord[] = Array.isArray(body.diceRolls) ? body.diceRolls : [];
+  const rawDiceRolls = Array.isArray(body.diceRolls) ? body.diceRolls : [];
+  if (rawDiceRolls.length > NARRATE_LIMITS.DICE_ROLLS_MAX) {
+    return NextResponse.json(
+      { error: `Příliš mnoho hodů kostkou (max ${NARRATE_LIMITS.DICE_ROLLS_MAX}).`, missingFields: [] },
+      { status: 400 }
+    );
+  }
+  const diceRolls: DiceRollRecord[] = rawDiceRolls;
   if (diceRolls.length > 0) {
     const diceValidation = validateDiceRolls(diceRolls);
     if (!diceValidation.ok) {
@@ -181,6 +130,16 @@ export async function POST(request: NextRequest) {
             { status: 401 }
           );
         }
+
+        // ---- Rate limit: 10 narrations per minute per user ----
+        const rl = checkRateLimit(`narrate:${user.id}`, 10, 60_000);
+        if (!rl.ok) {
+          return NextResponse.json(
+            { error: `Příliš mnoho požadavků. Zkus to znovu za ${rl.retryAfter}s.`, missingFields: [] },
+            { status: 429, headers: { "Retry-After": String(rl.retryAfter) } }
+          );
+        }
+
         const { data: member } = await supabase
           .from("campaign_members")
           .select("id")
@@ -305,7 +264,8 @@ export async function POST(request: NextRequest) {
     }
 
     // ---- Build provider request ----
-    const effectiveMemory = supabaseMemory ?? body.memorySummary ?? "";
+    // Truncate context fields — prevents prompt bloat / excessive token spend
+    const effectiveMemory = (supabaseMemory ?? body.memorySummary ?? "").slice(0, NARRATE_LIMITS.MEMORY_SUMMARY_MAX);
 
     // Sanitize characters from client — safety: drop any that leak campaignId mismatch
     const characters: CharacterSnapshot[] = Array.isArray(body.characters)
@@ -332,11 +292,11 @@ export async function POST(request: NextRequest) {
 
     const narrationRequest: NarrationRequest = {
       campaignId,
-      campaignTitle: body.campaignTitle ?? "",
-      campaignDescription: body.campaignDescription ?? "",
+      campaignTitle: (body.campaignTitle ?? "").slice(0, NARRATE_LIMITS.CAMPAIGN_TITLE_MAX),
+      campaignDescription: (body.campaignDescription ?? "").slice(0, NARRATE_LIMITS.CAMPAIGN_DESC_MAX),
       memorySummary: effectiveMemory,
-      houseRules: body.houseRules ?? "",
-      rulesPackText: body.rulesPackText ?? "",
+      houseRules: (body.houseRules ?? "").slice(0, NARRATE_LIMITS.HOUSE_RULES_MAX),
+      rulesPackText: (body.rulesPackText ?? "").slice(0, NARRATE_LIMITS.RULES_PACK_MAX),
       recentEntries,
       relevantEntries,
       eventLog: eventLog.length > 0 ? eventLog : undefined,
@@ -353,6 +313,15 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await provider.generate(narrationRequest);
+
+    // ---- Validate AI output ----
+    if (!result.narrationText || typeof result.narrationText !== "string" || result.narrationText.trim().length === 0) {
+      console.error("[narrate] Provider returned empty narrationText");
+      return NextResponse.json(
+        { error: "AI vrátilo prázdnou odpověď. Zkus znovu.", missingFields: [] },
+        { status: 502 }
+      );
+    }
 
     // ---- Persist to Supabase (if configured) ----
     if (sbEnv && supabase) {

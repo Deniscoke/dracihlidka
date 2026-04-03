@@ -38,6 +38,7 @@ export default function ProfilePage() {
   const [supabaseOk, setSupabaseOk] = useState(false);
 
   useEffect(() => {
+    (async () => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     if (!url || !key) {
@@ -70,6 +71,7 @@ export default function ProfilePage() {
         }
       ).catch(() => setLoading(false));
     });
+    })();
   }, []);
 
   if (loading) {

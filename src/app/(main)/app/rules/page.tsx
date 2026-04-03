@@ -4,32 +4,32 @@ export default function RulesPage() {
   const sections = [
     {
       title: "Tvorba postavy",
-      description: "Rasy, povolania, schopnosti, výber výbavy",
+      description: "Rasy, povolání, schopnosti, výběr výbavy",
       status: "planned",
     },
     {
-      title: "Boj a súboj",
-      description: "Iniciatíva, útoky, obrana, zranenia",
+      title: "Boj a souboj",
+      description: "Iniciativa, útoky, obrana, zranění",
       status: "planned",
     },
     {
       title: "Mágia",
-      description: "Kúzla, magenergia, rituály",
+      description: "Kouzla, magenergie, rituály",
       status: "planned",
     },
     {
-      title: "Vybavenie",
-      description: "Zbrane, brnenia, predmety, obchod",
+      title: "Vybavení",
+      description: "Zbraně, brnění, předměty, obchod",
       status: "planned",
     },
     {
-      title: "Bestiár",
-      description: "Príšery, zvieratá, démoni",
+      title: "Bestiář",
+      description: "Příšery, zvířata, démoni",
       status: "planned",
     },
     {
-      title: "Pravidlá pre PJ",
-      description: "Vedenie hry, tvorba príbehu, odmeny",
+      title: "Pravidla pro PJ",
+      description: "Vedení hry, tvorba příběhu, odměny",
       status: "planned",
     },
   ];
@@ -37,11 +37,11 @@ export default function RulesPage() {
   return (
     <div className="max-w-3xl">
       <h1 className="text-xl font-bold text-zinc-100 mb-2">
-        Knižnica pravidiel
+        Knihovna pravidel
       </h1>
       <p className="text-zinc-400 text-sm mb-6">
-        Štruktúra pre budúcu integráciu pravidiel. Obsah bude parafrazovaný z
-        licencovaných zdrojov.
+        Struktura pro budoucí integraci pravidel. Obsah bude parafrázován z
+        licencovaných zdrojů.
       </p>
 
       <div className="space-y-2">
@@ -63,10 +63,10 @@ export default function RulesPage() {
 
       <div className="mt-8 p-4 bg-zinc-900/50 border border-zinc-800 rounded-lg">
         <p className="text-xs text-zinc-500">
-          <strong className="text-zinc-400">Právna poznámka:</strong> Pravidlá
-          sú spracované ako parafrázované zhrnutia. Žiadny pôvodný text nie je
-          reprodukovaný. Systém je navrhnutý ako generický RPG engine s
-          výmennými modulmi pravidiel.
+          <strong className="text-zinc-400">Právní poznámka:</strong> Pravidla
+          jsou zpracována jako parafrázovaná shrnutí. Žádný původní text není
+          reprodukován. Systém je navržen jako generický RPG engine s
+          výměnnými moduly pravidel.
         </p>
       </div>
     </div>

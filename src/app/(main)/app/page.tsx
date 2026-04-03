@@ -17,16 +17,16 @@ const NAV_CARDS: { href: string; icon: string; title: string; subtitle?: string;
   {
     href: "/app/campaigns",
     icon: "/ilustrations/home-kampane.png",
-    title: "Kampane",
-    role: "Správa príbehov",
+    title: "Kampaně",
+    role: "Správa příběhů",
     watermark: "KM",
     theme: "gold",
   },
   {
     href: "/app/rules",
     icon: "/ilustrations/home-pravidla.png",
-    title: "Pravidlá",
-    role: "Knižnica pravidiel",
+    title: "Pravidla",
+    role: "Knihovna pravidel",
     watermark: "PR",
     theme: "gold",
   },
@@ -34,15 +34,15 @@ const NAV_CARDS: { href: string; icon: string; title: string; subtitle?: string;
     href: "/app/characters",
     icon: "/ilustrations/home-postavy.png",
     title: "Postavy",
-    role: "Galéria & tvorba",
+    role: "Galerie & tvorba",
     watermark: "PS",
     theme: "gold",
   },
   {
     href: "/app/sien-slavy",
     icon: "/ilustrations/home-sien-slavy.png",
-    title: "Sieň slávy",
-    role: "Všetci hráči",
+    title: "Síň slávy",
+    role: "Všichni hráči",
     watermark: "HOF",
     theme: "gold",
   },
@@ -103,8 +103,8 @@ export default function DashboardPage() {
             </div>
           </div>
           <p className="text-base max-w-xl leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-            Správa kampaní, postáv a sessionů pre Dračí Hlídku. AI narrátor,
-            pravidlá a sledovanie príbehu – všetko na jednom mieste.
+            Správa kampaní, postáv a sezení pro Dračí Hlídku. AI narrátor,
+            pravidla a sledování příběhu – vše na jednom místě.
           </p>
         </div>
 
@@ -129,22 +129,22 @@ export default function DashboardPage() {
         <div className="mb-10">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>
-              Aktívne kampane
+              Aktivní kampaně
             </h2>
             <Link href="/app/campaigns" className="text-xs transition-colors" style={{ color: "var(--accent-gold)" }}>
-              Všetky →
+              Všechny →
             </Link>
           </div>
 
           {campaigns.length === 0 ? (
             <div className="rounded-xl p-6 text-center backdrop-blur-sm" style={{ border: "1px dashed var(--border-default)", background: "rgba(42,35,28,0.5)" }}>
-              <p className="text-sm mb-2" style={{ color: "var(--text-muted)" }}>Žiadne aktívne kampane</p>
+              <p className="text-sm mb-2" style={{ color: "var(--text-muted)" }}>Žádné aktivní kampaně</p>
               <Link
                 href="/app/campaigns"
                 className="text-sm underline underline-offset-2"
                 style={{ color: "var(--accent-gold)" }}
               >
-                Vytvoriť prvú kampaň
+                Vytvořit první kampaň
               </Link>
             </div>
           ) : (
@@ -154,7 +154,7 @@ export default function DashboardPage() {
                   key={campaign.id}
                   href={`/app/campaigns/${campaign.id}`}
                   title={campaign.name}
-                  role={new Date(campaign.updatedAt || campaign.createdAt).toLocaleDateString("sk-SK")}
+                  role={new Date(campaign.updatedAt || campaign.createdAt).toLocaleDateString("cs-CZ")}
                   watermark={campaign.name.slice(0, 2).toUpperCase()}
                   theme="gold"
                   items={campaign.description ? [{ icon: "📜", label: campaign.description }] : []}

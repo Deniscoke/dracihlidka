@@ -22,13 +22,13 @@ export function SpecializationModal({ character, onSelect, onCancel }: Specializ
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-5 border-b border-zinc-800">
-          <h3 className="text-lg font-bold text-zinc-100">Vylepšenie postavy</h3>
+          <h3 className="text-lg font-bold text-zinc-100">Vylepšení postavy</h3>
           <p className="text-sm text-zinc-500 mt-1">
             {character.name} · {baseClass} · Úr. {level}
           </p>
           {currentSpec && (
             <p className="text-xs text-amber-500/90 mt-2">
-              Aktuálna specializácia: <strong>{currentSpec}</strong>
+              Aktuální specializace: <strong>{currentSpec}</strong>
             </p>
           )}
         </div>
@@ -37,10 +37,10 @@ export function SpecializationModal({ character, onSelect, onCancel }: Specializ
           {options.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-zinc-500 text-sm">
-                Žiadne dostupné vylepšenia. Potrebuješ aspoň úroveň 3 pre prvú specializáciu.
+                Žádná dostupná vylepšení. Potřebuješ alespoň úroveň 3 pro první specializaci.
               </p>
               <p className="text-xs text-zinc-600 mt-2">
-                {baseClass} → úroveň 3: prvá cesta | úroveň 4: druhá cesta
+                {baseClass} → úroveň 3: první cesta | úroveň 4: druhá cesta
               </p>
             </div>
           ) : (
@@ -56,7 +56,7 @@ export function SpecializationModal({ character, onSelect, onCancel }: Specializ
                       <p className="font-semibold text-zinc-100 group-hover:text-amber-200 transition-colors">
                         {spec.name}
                       </p>
-                      <p className="text-xs text-zinc-500 mt-0.5">Od úrovne {spec.minLevel}</p>
+                      <p className="text-xs text-zinc-500 mt-0.5">Od úrovně {spec.minLevel}</p>
                       <p className="text-sm text-zinc-400 mt-2">{spec.description}</p>
                       <p className="text-xs text-amber-500/90 mt-2 font-medium">{spec.ability}</p>
                       {spec.statBonus && (
@@ -75,7 +75,7 @@ export function SpecializationModal({ character, onSelect, onCancel }: Specializ
 
         <div className="p-4 border-t border-zinc-800">
           <button onClick={onCancel} className="w-full py-2 text-zinc-400 hover:text-zinc-200 text-sm">
-            Zavrieť
+            Zavřít
           </button>
         </div>
       </div>

@@ -8,9 +8,7 @@ import {
   fetchCampaign,
   fetchNarrations,
   fetchCharacters,
-  insertNarration,
   updateCharacter,
-  updateCampaignMemory,
 } from "@/lib/campaigns/campaign-content-live";
 import { createClient as createSupabaseClient } from "@/lib/supabase/client";
 import { RACE_ICONS, CLASS_ICONS } from "@/lib/dh-constants";
@@ -253,10 +251,14 @@ export default function NarratePage() {
       const updates: Partial<Character> = {};
 
       if (typeof delta.xpDelta === "number") {
-        updates.xp = (match.xp ?? 0) + delta.xpDelta;
+        updates.xp = Math.max(0, (match.xp ?? 0) + delta.xpDelta);
       }
       if (typeof delta.hpDelta === "number") {
-        updates.hp = Math.max(0, (match.hp ?? 0) + delta.hpDelta);
+        const newHp = (match.hp ?? 0) + delta.hpDelta;
+        // Clamp between 0 and maxHp (if known)
+        updates.hp = match.maxHp !== undefined
+          ? Math.max(0, Math.min(match.maxHp, newHp))
+          : Math.max(0, newHp);
       }
 
       // Statuses: add + remove, deduplicate
@@ -453,7 +455,7 @@ export default function NarratePage() {
     }
   }
 
-  function useSuggestion(s: string) {
+  function applySuggestion(s: string) {
     setPrompt(s);
   }
 
@@ -515,7 +517,7 @@ export default function NarratePage() {
   // ==================================================================
   return (
     <div className="max-w-[1400px]">
-      <Link href={`/campaigns/${campaignId}`} className="text-sm mb-4 inline-block transition-colors" style={{ color: "var(--text-muted)" }}>
+      <Link href={`/app/campaigns/${campaignId}`} className="text-sm mb-4 inline-block transition-colors" style={{ color: "var(--text-muted)" }}>
         ← Zpět
       </Link>
 
@@ -808,7 +810,7 @@ export default function NarratePage() {
           <p className="text-xs text-zinc-500 mb-2 uppercase tracking-wider">Návrhy akcí</p>
           <div className="flex flex-wrap gap-2">
             {suggestions.map((s, i) => (
-              <button key={i} onClick={() => useSuggestion(s)}
+              <button key={i} onClick={() => applySuggestion(s)}
                 className="text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-3 py-1.5 rounded transition-colors"
               >{s}</button>
             ))}
