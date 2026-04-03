@@ -110,17 +110,36 @@ create policy "Members delete narrations"
     auth.uid() in (select user_id from campaign_members where campaign_id = narrations.campaign_id)
   );
 
--- characters — len členovia kampane (owner pre UPDATE/DELETE)
+-- characters
+create policy "Characters readable by all"
+  on characters for select using (true);
+
+-- INSERT: campaign characters (must be member) OR roster characters (campaign_id IS NULL, must own)
 create policy "Members insert characters"
   on characters for insert with check (
     auth.uid() in (select user_id from campaign_members where campaign_id = characters.campaign_id)
   );
-create policy "Characters readable by all"
-  on characters for select using (true);
+create policy "Owner can insert roster character"
+  on characters for insert with check (
+    campaign_id is null
+    and auth.uid() = owner_id
+    and auth.role() = 'authenticated'
+  );
+
+-- UPDATE: owner can update own character; campaign members can update any character in their campaign
 create policy "Owner can update character"
   on characters for update using (
     (auth.uid() = owner_id) or (owner_id is null)
   );
+create policy "Members can update campaign characters"
+  on characters for update using (
+    campaign_id is not null
+    and auth.uid() in (
+      select user_id from campaign_members where campaign_id = characters.campaign_id
+    )
+  );
+
+-- DELETE: owner only
 create policy "Owner can delete character"
   on characters for delete using (
     (auth.uid() = owner_id) or (owner_id is null)
