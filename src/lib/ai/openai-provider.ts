@@ -111,21 +111,54 @@ function buildSystemPrompt(req: NarrationRequest): string {
   parts.push(`\n${DH_GM_INSTRUCTIONS}`);
 
   parts.push(
-    `\nPokyny:`,
-    `- ROZSAH VYPRÁVĚNÍ: Piš 6–12 vět (minimálně 3 odstavce). Vyprávění musí být bohaté, atmosférické a sofistikované — jako profesionální fantasy literatura.`,
-    `- STRUKTURA KAŽDÉ ODPOVĚDI: 1) Atmosférický popis prostředí (zvuky, pachy, světlo, počasí) — 2–3 věty. 2) Reakce světa na akci hráče — důsledky, NPC dialogy s přímou řečí v uvozovkách, mechanické výsledky — 3–5 vět. 3) Napětí a výzva — komplikace, nová hrozba, morální dilema nebo výzva k hodu — 2–3 věty.`,
-    `- STYL: Piš jako zkušený český fantasy autor. Používej bohaté metafory, smyslové detaily (vůně, textury, zvuky), přímou řeč NPC s výraznými osobnostmi. Střídej krátké úderné věty s delšími popisnými. Buduj napětí — nikdy nekončí "klidně", vždy je něco, co hráče táhne dál.`,
-    `- NPC DIALOGY: Každé NPC má vlastní hlas — sedlák mluví jinak než čaroděj. Používej přímou řeč: „Stůj, cizinče!" zavrčel strážný. Dávej NPC motivace, tajemství, slabosti.`,
-    `- MECHANIKY DH-LITE: Aktivně zapojuj bestiář (goblini, vlci, kostlivci, harpyje, dryády, upíři, vlkodlaci, rusalky, skřeti, trollové, démoni), kouzla, léčky, pasti a puzzle. Když situace vyžaduje hod kostkou, VŽDY explicitně vyzvi hráče (např. "Hod si k20 na OBR — obtížnost 13."). suggestedActions může obsahovat "Hod k20 na..." akce.`,
-    `- DŮSLEDKY: Svět reaguje na hráčova rozhodnutí. Špatná rozhodnutí mají následky. NPC si pamatují, co hráč udělal. Reputace se mění.`,
-    `- TEMPO: Střídej akci (boje, honičky), průzkum (záhady, hádanky), sociální interakce (NPC, obchody, politika) a klidové momenty (odpočinek, příprava). Nikdy nedělej víc než 2 kola stejného tempa za sebou.`,
-    `- Na konci VŽDY přidej komplikaci, odhalení nebo dramatický cliffhanger — hráč musí chtít pokračovat.`,
+    `\n=== HLAVNÍ POKYNY PRO VYPRÁVĚNÍ ===`,
+
+    `\n--- ANALÝZA KONTEXTU (KRITICKY DŮLEŽITÉ) ---`,
+    `- PŘED každou odpovědí ANALYZUJ celou dosavadní historii (recentEntries, relevantEntries, eventLog, memorySummary). Identifikuj:`,
+    `  1) Jaké scénáře a situace se v příběhu OPAKOVALY — NIKDY je nezopakuj ve stejné formě.`,
+    `  2) Jaké NPC se objevily — udržuj KONZISTENCI jejich osobností, motivací a vztahů k hráčům.`,
+    `  3) Kde je příběhový oblouk — jsi v úvodu, stoupání, vyvrcholení, nebo pádu? Přizpůsob tempo.`,
+    `  4) Co hráč preferuje — pokud volí sociální akce, nabízej víc NPC interakcí; pokud boj, eskaluj konflikty.`,
+    `- NIKDY neuveď, že "kolem je klid" nebo "nic se neděje" — VŽDY je nějaký podmět k akci, i v klidových scénách.`,
+    `- Udržuj KONTINUITU: pokud se v předchozí narraci zmínil stín v rohu, měl by se v dalších narracích vysvětlit nebo rozvinout.`,
+    `- Pokud hráč opakuje podobný vstup, POSUŇ příběh dál — NEODPOVÍDEJ podobnou narací, ale ESKALUJ nebo PŘENES do nové situace.`,
+
+    `\n--- ANTI-REPETICE (POVINNÉ) ---`,
+    `- Projdi historii a identifikuj VZORY, které se opakují (stejní nepřátelé, stejné reakce NPC, stejné popisy prostředí).`,
+    `- ZAKÁZÁNO opakovat: stejné přirovnání, stejnou atmosféru, stejný typ komplikace dvakrát po sobě.`,
+    `- Pokud posledních 3–5 narací bylo akčních → další MUSÍ být sociální, průzkumná nebo záhadná.`,
+    `- Pokud posledních 3–5 narací bylo klidných → MUSÍ přijít nečekaná komplikace, útok, nebo dramatické odhalení.`,
+    `- Střídej TYPY scén: dialog → průzkum → boj → hádanka → sociální → odhalení → cestování → odpočinek → intriky.`,
+
+    `\n--- PŘÍBĚHOVÉ OBLOUKY ---`,
+    `- Buduj VÍCEVRSTEVNÉ zápletky: hlavní quest + 2–3 vedlejší příběhové linky.`,
+    `- Zanechávej STOPY a PŘEDZVĚSTI (foreshadowing): podivné zvuky, zmizelí lidé, tajemné symboly, sny.`,
+    `- NPC mají VLASTNÍ agendu — jednají i bez hráčova impulzu. Svět žije: obchodníci cestují, armády se přesouvají, roční období se mění.`,
+    `- Každých 5–8 narací by měl přijít ZVRAT: zrada spojence, odhalení tajemství, příchod mocného nepřítele, morální dilema bez správné odpovědi.`,
+    `- Buduj NAPĚTÍ graduálně: drobné náznaky → zvětšující se hrozba → konfrontace → důsledky.`,
+
+    `\n--- ROZSAH A STYL ---`,
+    `- Piš 8–15 vět (3–4 odstavce). Vyprávění musí být bohaté, atmosférické a sofistikované — jako profesionální fantasy literatura.`,
+    `- STRUKTURA: 1) Smyslový popis prostředí (2–3 věty: zvuky, vůně, světlo, textura, teplota, počasí). 2) Reakce světa na hráčovu akci (3–6 vět: důsledky, NPC dialogy, mechaniky). 3) Napětí a háček (2–4 věty: nová informace, hrozba, tajemství, cliffhanger).`,
+    `- STYL: Piš jako zkušený český fantasy autor (Sapkowski, Tolkien, Martin). Bohaté metafory, smyslové detaily, přímá řeč NPC s výraznými osobnostmi. Střídej krátké úderné věty s delšími popisnými.`,
+    `- NPC DIALOGY: Každé NPC má UNIKÁTNÍ hlas — sedlák s dialektem, čaroděj s archaickým jazykem, zloděj s argot. Používej přímou řeč: „Stůj, cizinče!" zavrčel strážný. NPC mají motivace, tajemství, slabosti, humor.`,
+
+    `\n--- MECHANIKY DH-LITE ---`,
+    `- Aktivně zapojuj bestiář (goblini, vlci, kostlivci, harpyje, dryády, upíři, vlkodlaci, rusalky, skřeti, trollové, démoni, elementálové, přízraky), kouzla, léčky, pasti a puzzle.`,
+    `- Když situace vyžaduje hod kostkou, VŽDY explicitně vyzvi hráče (např. "Hod si k20 na OBR — obtížnost 13."). suggestedActions může obsahovat "Hod k20 na..." akce.`,
+    `- DŮSLEDKY: Svět reaguje na hráčova rozhodnutí. Špatná rozhodnutí mají TRVALÉ následky. NPC si pamatují, co hráč udělal. Reputace se mění. Ceny se zvyšují, dveře se zavírají, spojenci se odvracejí.`,
+
+    `\n--- SUGGESTED ACTIONS (3 NÁVRHY — POVINNĚ PESTRÉ) ---`,
+    `- Každý z 3 návrhů MUSÍ být z JINÉ kategorie: 1) Sociální/dialog (promluvit, vyjednávat, podplatit, zastrašit, okouzlit). 2) Průzkum/interakce (prozkoumat, otevřít, přečíst, vystopovat, naslouchat). 3) Akční/bojový (zaútočit, schovat se, utéct, použít kouzlo, nastražit past).`,
+    `- Návrhy musí být KONKRÉTNÍ a KREATIVNÍ — ne generické "Prozkoumat okolí" ale "Proplížit se ke stolu a přečíst otevřenou knihu" nebo "Podplatit strážného lahví vína ze zásoby".`,
+    `- Alespoň jeden návrh MUSÍ odkazovat na konkrétní předmět z inventáře, NPC ze scény, nebo detail z prostředí.`,
+    `- Na konci VŽDY přidej komplikaci, odhalení nebo dramatický cliffhanger — hráč MUSÍ chtít pokračovat.`,
     `- Pokud je zadán Balíček pravidel, aplikuj jeho mechaniky — NECITUJ pravidla doslovně, jen je uplatni.`,
     `- Vždy urči, kde se hráč aktuálně nachází na mapě světa Othion.`,
     `- Odpověz v JSON formátu s těmito klíči:`,
     `  narrationText: string (vyprávění)`,
     `  suggestedActions: string[] (přesně 3 návrhy)`,
-    `  updatedMemorySummary: string (1–3 věty shrnující kampaň)`,
+    `  updatedMemorySummary: string (3–5 vět DETAILNÍHO shrnutí: KDE se hráči nachází, CO se právě děje, JAKÉ úkoly mají, KDO jsou důležité NPC, JAKÉ hrozby existují. Toto shrnutí je tvůj HLAVNÍ ZDROJ KONTEXTU pro další narace — buď precizní.)`,
     `  consequences: { eventSummary: string, deltas: Array<{ characterName: string, xpDelta?: number, hpDelta?: number, addStatuses?: string[], removeStatuses?: string[], addInjuries?: string[], removeInjuries?: string[], addItems?: string[], removeItems?: string[], addNotes?: string[] }>, lootFound?: string[], combatLog?: string } | null`,
     `  mapLocation: { map: "world"|"ihienburgh", locationId: "id_ze_seznamu", locationName: "čitelný název" }`,
     `  mapMarkers: [{ id: "unikátní_id", type: "enemy"|"city"|"poi"|"quest"|"npc", name: "název", locationId: "id_místa", description: "krátký popis", active: true|false }]`,
@@ -147,20 +180,34 @@ function buildSystemPrompt(req: NarrationRequest): string {
 function buildUserMessage(req: NarrationRequest): string {
   const sections: string[] = [];
 
+  // Recent narrations — full context for continuity analysis
   if (req.recentEntries && req.recentEntries.length > 0) {
     const recentLines = req.recentEntries.map(
-      (e: CompactNarrationEntry) => `- Hráč: ${e.userInput}\n  Vypravěč: ${e.narrationText.slice(0, 200)}`
+      (e: CompactNarrationEntry, i: number) => `[${i + 1}] Hráč: ${e.userInput}\n    Vypravěč: ${e.narrationText.slice(0, 400)}`
     );
-    sections.push(`Nedávná historie:\n${recentLines.join("\n")}`);
+    sections.push(`=== NEDÁVNÁ HISTORIE (posledních ${req.recentEntries.length} narací — analyzuj pro kontext a anti-repetici) ===\n${recentLines.join("\n\n")}`);
+
+    // Anti-repetition hint: extract recent scene types
+    const recentTexts = req.recentEntries.map(e => e.narrationText.toLowerCase()).join(" ");
+    const patterns: string[] = [];
+    if ((recentTexts.match(/boj|útok|meč|zbraň|nepřítel/g) || []).length > 3) patterns.push("BOJ (příliš mnoho bojových scén)");
+    if ((recentTexts.match(/stín|tma|tajemn/g) || []).length > 3) patterns.push("TAJEMNO (příliš mnoho záhadných scén)");
+    if ((recentTexts.match(/tavern|hospod|pivo|jídlo/g) || []).length > 2) patterns.push("TAVERNA (příliš často v hospodě)");
+    if ((recentTexts.match(/les|strom|příroda/g) || []).length > 3) patterns.push("LES (příliš často v lese)");
+    if (patterns.length > 0) {
+      sections.push(`⚠️ DETEKOVANÉ OPAKUJÍCÍ SE VZORY (vyhni se jim!): ${patterns.join(", ")}. POSUŇ příběh do NOVÉ situace.`);
+    }
   }
 
+  // Relevant older entries — thematic connections
   if (req.relevantEntries && req.relevantEntries.length > 0) {
     const relLines = req.relevantEntries.map(
-      (e: CompactNarrationEntry) => `- [${e.createdAt}] ${e.userInput} → ${e.narrationText.slice(0, 150)}`
+      (e: CompactNarrationEntry) => `- [${e.createdAt?.slice(0, 10) ?? "?"}] ${e.userInput} → ${e.narrationText.slice(0, 300)}`
     );
-    sections.push(`Relevantní starší události:\n${relLines.join("\n")}`);
+    sections.push(`=== RELEVANTNÍ STARŠÍ UDÁLOSTI (tematicky propojené — využij pro kontinuitu a zpětné odkazy) ===\n${relLines.join("\n")}`);
   }
 
+  // Structured story beats — key narrative milestones
   if (req.eventLog && req.eventLog.length > 0) {
     const eventLines = req.eventLog.map((e) => {
       try {
@@ -172,13 +219,14 @@ function buildUserMessage(req: NarrationRequest): string {
         if (beat.combatOutcome) parts.push(`Boj: ${beat.combatOutcome}`);
         return `- ${parts.join(" | ")}`;
       } catch {
-        return `- ${e.title}: ${e.content.slice(0, 150)}`;
+        return `- ${e.title}: ${e.content.slice(0, 200)}`;
       }
     });
-    sections.push(`Strukturovaná historie příběhu (story beats):\n${eventLines.join("\n")}`);
+    sections.push(`=== KRONIKA PŘÍBĚHU (klíčové milníky — navazuj na nevyřešené nitky, rozvíjej questy) ===\n${eventLines.join("\n")}`);
   }
 
-  sections.push(`Akce hráče: ${req.userInput}`);
+  // Current player action
+  sections.push(`=== AKCE HRÁČE (reaguj na toto) ===\n${req.userInput}`);
 
   return sections.join("\n\n");
 }

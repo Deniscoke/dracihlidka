@@ -190,13 +190,13 @@ export async function POST(request: NextRequest) {
           .maybeSingle();
         supabaseMemory = campaignRow?.memory_summary ?? null;
 
-        // Recent narrations — Tier 2: last 10
+        // Recent narrations — last 20 for deep context
         const { data: recentData } = await supabase
           .from("narrations")
           .select("user_input, narration_text, created_at")
           .eq("campaign_id", campaignId)
           .order("created_at", { ascending: false })
-          .limit(10);
+          .limit(20);
         if (recentData) {
           recentEntries = recentData.map((r: { user_input: string; narration_text: string; created_at: string }) => ({
             userInput: r.user_input,
@@ -224,7 +224,7 @@ export async function POST(request: NextRequest) {
           if (relData) {
             relevantEntries = relData.map((r: { user_input: string; narration_text: string; created_at: string }) => ({
               userInput: r.user_input,
-              narrationText: r.narration_text.slice(0, 300), // truncate to control token usage
+              narrationText: r.narration_text.slice(0, 500),
               createdAt: r.created_at,
             }));
           }
@@ -233,7 +233,7 @@ export async function POST(request: NextRequest) {
         console.warn("[narrate] Supabase context fetch failed, continuing without:", dbErr);
       }
 
-      // Tier 3: structured event log (memory_entries type='event', last 10)
+      // Tier 3: structured event log (memory_entries type='event', last 20)
       try {
         const { data: eventData } = await supabase
           .from("memory_entries")
@@ -241,7 +241,7 @@ export async function POST(request: NextRequest) {
           .eq("campaign_id", campaignId)
           .eq("type", "event")
           .order("created_at", { ascending: false })
-          .limit(10);
+          .limit(20);
         if (eventData) {
           eventLog = eventData.map((e: { title: string; content: string; created_at: string }) => ({
             title: e.title,
