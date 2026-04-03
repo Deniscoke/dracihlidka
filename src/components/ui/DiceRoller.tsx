@@ -1,13 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import { Dice3D } from "./Dice3D";
 
 // ── Types ──────────────────────────────────────────────────
 
 export type RollPhase =
   | "idle"            // no roll yet this turn
+  | "rolling"         // animation playing
   | "rolled_normal"   // first roll done, not critical — no further rolls allowed
   | "rolled_critical" // first roll was critical — bonus roll available
+  | "rolling_bonus"   // bonus roll animation playing
   | "done";           // bonus roll used — sequence complete
 
 export interface DiceRollMeta {
@@ -50,55 +53,76 @@ export default function DiceRoller({ characters, onRollResult }: DiceRollerProps
   const [selectedCharId, setSelectedCharId] = useState<string | null>(null);
   const [phase, setPhase] = useState<RollPhase>("idle");
   const [rolls, setRolls] = useState<DiceRollRecord[]>([]);
+  // 3D dice animation state
+  const [animDice, setAnimDice] = useState<{ type: "d6" | "d20"; value: number } | null>(null);
+  const [animRolling, setAnimRolling] = useState(false);
+  // Pending roll data (set before animation, fired after)
+  const [pendingRoll, setPendingRoll] = useState<{
+    charName: string;
+    diceType: "d6" | "d20";
+    result: number;
+    critical: boolean;
+    isBonus: boolean;
+  } | null>(null);
 
   const char = characters.find((c) => c.id === selectedCharId) ?? characters[0];
   const charName = char?.name ?? "Postava";
 
-  // Rolling is enabled only when idle or in critical state (for bonus)
   const canRoll = phase === "idle";
   const canBonus = phase === "rolled_critical";
   const isFinished = phase === "rolled_normal" || phase === "done";
+  const isAnimating = phase === "rolling" || phase === "rolling_bonus";
+
+  // When 3D animation ends, commit the roll
+  const handleAnimEnd = useCallback(() => {
+    setAnimRolling(false);
+    if (!pendingRoll) return;
+
+    const { charName: cn, diceType, result, critical, isBonus } = pendingRoll;
+    const record: DiceRollRecord = { diceType, result, isCritical: critical, isBonusRoll: isBonus };
+
+    if (isBonus) {
+      setRolls((prev) => [...prev, record]);
+      setPhase("done");
+      onRollResult(cn, diceType, result, { isCritical: false, isBonusRoll: true, phase: "bonus" });
+    } else {
+      setRolls([record]);
+      setPhase(critical ? "rolled_critical" : "rolled_normal");
+      onRollResult(cn, diceType, result, { isCritical: critical, isBonusRoll: false, phase: "first" });
+    }
+    setPendingRoll(null);
+  }, [pendingRoll, onRollResult]);
 
   function handleFirstRoll(diceType: "d6" | "d20") {
     if (!canRoll) return;
     const result = roll(diceType === "d6" ? 6 : 20);
     const critical = isCriticalResult(diceType, result);
-    const record: DiceRollRecord = { diceType, result, isCritical: critical, isBonusRoll: false };
 
-    setRolls([record]);
-    setPhase(critical ? "rolled_critical" : "rolled_normal");
-    onRollResult(charName, diceType, result, {
-      isCritical: critical,
-      isBonusRoll: false,
-      phase: "first",
-    });
+    // Start animation
+    setAnimDice({ type: diceType, value: result });
+    setAnimRolling(true);
+    setPhase("rolling");
+    setPendingRoll({ charName, diceType, result, critical, isBonus: false });
   }
 
   function handleBonusRoll() {
     if (!canBonus) return;
-    // Bonus roll uses the same dice type as the critical first roll
     const firstRoll = rolls[0];
     if (!firstRoll) return;
     const result = roll(firstRoll.diceType === "d6" ? 6 : 20);
-    const record: DiceRollRecord = {
-      diceType: firstRoll.diceType,
-      result,
-      isCritical: false,
-      isBonusRoll: true,
-    };
 
-    setRolls((prev) => [...prev, record]);
-    setPhase("done");
-    onRollResult(charName, firstRoll.diceType, result, {
-      isCritical: false,
-      isBonusRoll: true,
-      phase: "bonus",
-    });
+    setAnimDice({ type: firstRoll.diceType, value: result });
+    setAnimRolling(true);
+    setPhase("rolling_bonus");
+    setPendingRoll({ charName, diceType: firstRoll.diceType, result, critical: false, isBonus: true });
   }
 
   function handleReset() {
     setPhase("idle");
     setRolls([]);
+    setAnimDice(null);
+    setAnimRolling(false);
+    setPendingRoll(null);
   }
 
   if (characters.length === 0) return null;
@@ -128,7 +152,7 @@ export default function DiceRoller({ characters, onRollResult }: DiceRollerProps
           <button
             type="button"
             onClick={() => handleFirstRoll("d6")}
-            disabled={!canRoll}
+            disabled={!canRoll || isAnimating}
             className="px-3 py-1.5 rounded-lg dh-btn-primary text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             k6
@@ -136,7 +160,7 @@ export default function DiceRoller({ characters, onRollResult }: DiceRollerProps
           <button
             type="button"
             onClick={() => handleFirstRoll("d20")}
-            disabled={!canRoll}
+            disabled={!canRoll || isAnimating}
             className="px-3 py-1.5 rounded-lg dh-btn-primary text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             k20
@@ -144,7 +168,7 @@ export default function DiceRoller({ characters, onRollResult }: DiceRollerProps
         </div>
 
         {/* Reset — visible once any roll has been made */}
-        {phase !== "idle" && (
+        {phase !== "idle" && !isAnimating && (
           <button
             type="button"
             onClick={handleReset}
@@ -155,25 +179,40 @@ export default function DiceRoller({ characters, onRollResult }: DiceRollerProps
         )}
       </div>
 
-      {/* Row 2: roll history */}
-      {rolls.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          {rolls.map((r, i) => (
-            <span
-              key={i}
-              style={{
-                color: r.isCritical
-                  ? "var(--accent-gold)"
-                  : r.isBonusRoll
-                  ? "var(--accent-gold)"
-                  : "var(--text-secondary)",
-              }}
-            >
-              {r.isBonusRoll ? "Bonusový hod" : "Poslední hod"}: {r.diceType.toUpperCase()} ={" "}
-              <strong>{r.result}</strong>
-              {r.isCritical && " 🎯 KRITICKÝ!"}
+      {/* Row 2: 3D dice animation + roll results */}
+      {animDice && (
+        <div className="flex items-center gap-4 py-2">
+          <Dice3D
+            type={animDice.type}
+            value={animDice.value}
+            rolling={animRolling}
+            onAnimationEnd={handleAnimEnd}
+          />
+
+          {/* Show result after animation */}
+          {!animRolling && rolls.length > 0 && (
+            <div className="flex flex-col gap-1">
+              {rolls.map((r, i) => (
+                <span
+                  key={i}
+                  className="text-sm font-medium"
+                  style={{
+                    color: r.isCritical ? "var(--accent-gold)" : "var(--text-secondary)",
+                  }}
+                >
+                  {r.isBonusRoll ? "Bonus" : r.diceType.toUpperCase()}:{" "}
+                  <strong className="text-lg">{r.result}</strong>
+                  {r.isCritical && " 🎯 KRITICKÝ!"}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {animRolling && (
+            <span className="text-xs animate-pulse" style={{ color: "var(--accent-gold)" }}>
+              Hází se…
             </span>
-          ))}
+          )}
         </div>
       )}
 
@@ -198,7 +237,7 @@ export default function DiceRoller({ characters, onRollResult }: DiceRollerProps
         </div>
       )}
 
-      {/* Row 4: finished indicator (isFinished = rolled_normal | done, never rolled_critical) */}
+      {/* Row 4: finished indicator */}
       {isFinished && (
         <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
           {phase === "done"
