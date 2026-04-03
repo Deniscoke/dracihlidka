@@ -221,8 +221,8 @@ export default function CharactersGlobalPage() {
 
 function CharCard({ character: c, campaignName }: { character: Character; campaignName: string }) {
   const href = c.campaignId === ROSTER_CAMPAIGN_ID
-    ? `/campaigns/${ROSTER_CAMPAIGN_ID}/characters`
-    : `/campaigns/${c.campaignId}/characters`;
+    ? `/app/campaigns/${ROSTER_CAMPAIGN_ID}/characters`
+    : `/app/campaigns/${c.campaignId}/characters`;
   return (
     <a href={href} className="block">
       <CharFancyCard
