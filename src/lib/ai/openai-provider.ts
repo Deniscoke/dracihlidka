@@ -327,8 +327,7 @@ export class OpenAIProvider implements NarrationProvider {
       },
       body: JSON.stringify({
         model: this.model,
-        max_completion_tokens: MAX_COMPLETION_TOKENS,
-        // temperature omitted — gpt-5-mini only supports default value (1)
+        max_tokens: MAX_COMPLETION_TOKENS,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage },
