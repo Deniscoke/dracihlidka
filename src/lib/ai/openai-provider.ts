@@ -19,7 +19,7 @@ import { DH_LITE_RULES, DH_GM_INSTRUCTIONS, DH_PJ_PERSONALITY, DH_COMBAT_INSTRUC
 import { OTHION_LOCATIONS_PROMPT } from "@/data/othion-locations";
 
 const DEFAULT_MODEL = "gpt-4o";
-const MAX_COMPLETION_TOKENS = 16384;
+const MAX_COMPLETION_TOKENS = 2048;
 
 // ---- System prompt ----
 

@@ -9,8 +9,8 @@ import { checkRateLimit } from "@/lib/rate-limit";
 
 const OPENAI_TTS_URL = "https://api.openai.com/v1/audio/speech";
 
-// OpenAI voices — marin/cedar recommended for best quality
-const VOICES = ["marin", "cedar", "onyx", "sage", "coral", "nova", "alloy"] as const;
+// OpenAI voices — ash/onyx for deep narrator, coral/sage for lighter tones
+const VOICES = ["ash", "onyx", "sage", "coral", "nova", "alloy", "echo", "fable", "shimmer"] as const;
 type VoiceId = (typeof VOICES)[number];
 
 function isValidVoice(v: string): v is VoiceId {
@@ -65,11 +65,18 @@ export async function POST(req: NextRequest) {
   // Max 4096 chars for OpenAI TTS
   const truncated = text.length > 4096 ? text.slice(0, 4096) : text;
 
-  const voice: VoiceId = isValidVoice(body.voice ?? "") ? (body.voice as VoiceId) : "marin";
+  const voice: VoiceId = isValidVoice(body.voice ?? "") ? (body.voice as VoiceId) : "ash";
 
-  // Instructions for narrator / GM tone
-  const instructions =
-    "Speak in a calm, engaging narrative tone like a storyteller or game master. Moderate pace, clear pronunciation.";
+  // Czech narrator instructions — detailed tone guidance for authentic human sound
+  const instructions = [
+    "Mluvíš jako zkušený český vypravěč stolní RPG hry.",
+    "Hlas je hluboký, klidný a jistý — jako by vyprávěl u táboráku.",
+    "Používej přirozené pauzy mezi větami pro dramatický efekt.",
+    "Při napínavých scénách zrychli a ztišíš hlas, u odhalení naopak zdůrazni.",
+    "Vyslovuj česká jména a slova přirozeně, bez přízvuku.",
+    "Nikdy nezní mechanicky — střídej intonaci, důraz a tempo jako živý herec.",
+    "Emoce: strach šeptem, radost zvýšeným hlasem, bitva energicky a rázně.",
+  ].join(" ");
 
   try {
     const res = await fetch(OPENAI_TTS_URL, {
@@ -84,6 +91,7 @@ export async function POST(req: NextRequest) {
         input: truncated,
         instructions,
         response_format: "mp3",
+        speed: 1.05,
       }),
     });
 
@@ -96,6 +104,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Stream audio to client for faster first-byte playback
+    const audioStream = res.body;
+    if (audioStream) {
+      return new NextResponse(audioStream as ReadableStream, {
+        headers: {
+          "Content-Type": "audio/mpeg",
+          "Cache-Control": "private, max-age=3600",
+          "Transfer-Encoding": "chunked",
+        },
+      });
+    }
+
+    // Fallback: buffer entire response
     const audioBuffer = await res.arrayBuffer();
     return new NextResponse(audioBuffer, {
       headers: {
