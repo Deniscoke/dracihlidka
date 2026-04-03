@@ -19,7 +19,7 @@ import { DH_LITE_RULES, DH_GM_INSTRUCTIONS, DH_PJ_PERSONALITY, DH_COMBAT_INSTRUC
 import { OTHION_LOCATIONS_PROMPT } from "@/data/othion-locations";
 
 const DEFAULT_MODEL = "gpt-4o";
-const MAX_COMPLETION_TOKENS = 2048;
+const MAX_COMPLETION_TOKENS = 4096;
 
 // ---- System prompt ----
 
@@ -112,10 +112,14 @@ function buildSystemPrompt(req: NarrationRequest): string {
 
   parts.push(
     `\nPokyny:`,
-    `- Odpověz 2–5 větami vyprávění reagujícího na vstup hráče. Střídej styl: nejen umělecký popis, ale i mechanické momenty (boj, hod kostkou, kouzla, bestiář).`,
-    `- Používej bestiář (goblini, vlci, kostlivci, harpyje, dryády, upíři, vlkodlaci, rusalky) a kouzla z DH-LITE.`,
-    `- Když situace vyžaduje hod kostkou, VŽDY na konci vyprávění explicitně vyzvi hráče (např. "Hod si k20 na OBR — obtížnost 13."). suggestedActions může obsahovat "Hod k20 na..." akce.`,
-    `- Na konci vyprávění přidej komplikaci nebo vyzvání k hodu.`,
+    `- ROZSAH VYPRÁVĚNÍ: Piš 6–12 vět (minimálně 3 odstavce). Vyprávění musí být bohaté, atmosférické a sofistikované — jako profesionální fantasy literatura.`,
+    `- STRUKTURA KAŽDÉ ODPOVĚDI: 1) Atmosférický popis prostředí (zvuky, pachy, světlo, počasí) — 2–3 věty. 2) Reakce světa na akci hráče — důsledky, NPC dialogy s přímou řečí v uvozovkách, mechanické výsledky — 3–5 vět. 3) Napětí a výzva — komplikace, nová hrozba, morální dilema nebo výzva k hodu — 2–3 věty.`,
+    `- STYL: Piš jako zkušený český fantasy autor. Používej bohaté metafory, smyslové detaily (vůně, textury, zvuky), přímou řeč NPC s výraznými osobnostmi. Střídej krátké úderné věty s delšími popisnými. Buduj napětí — nikdy nekončí "klidně", vždy je něco, co hráče táhne dál.`,
+    `- NPC DIALOGY: Každé NPC má vlastní hlas — sedlák mluví jinak než čaroděj. Používej přímou řeč: „Stůj, cizinče!" zavrčel strážný. Dávej NPC motivace, tajemství, slabosti.`,
+    `- MECHANIKY DH-LITE: Aktivně zapojuj bestiář (goblini, vlci, kostlivci, harpyje, dryády, upíři, vlkodlaci, rusalky, skřeti, trollové, démoni), kouzla, léčky, pasti a puzzle. Když situace vyžaduje hod kostkou, VŽDY explicitně vyzvi hráče (např. "Hod si k20 na OBR — obtížnost 13."). suggestedActions může obsahovat "Hod k20 na..." akce.`,
+    `- DŮSLEDKY: Svět reaguje na hráčova rozhodnutí. Špatná rozhodnutí mají následky. NPC si pamatují, co hráč udělal. Reputace se mění.`,
+    `- TEMPO: Střídej akci (boje, honičky), průzkum (záhady, hádanky), sociální interakce (NPC, obchody, politika) a klidové momenty (odpočinek, příprava). Nikdy nedělej víc než 2 kola stejného tempa za sebou.`,
+    `- Na konci VŽDY přidej komplikaci, odhalení nebo dramatický cliffhanger — hráč musí chtít pokračovat.`,
     `- Pokud je zadán Balíček pravidel, aplikuj jeho mechaniky — NECITUJ pravidla doslovně, jen je uplatni.`,
     `- Vždy urči, kde se hráč aktuálně nachází na mapě světa Othion.`,
     `- Odpověz v JSON formátu s těmito klíči:`,
