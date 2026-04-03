@@ -93,37 +93,53 @@ body {
   width: 112px;
   height: 112px;
   background-image: url('/narrator/narrator_sprite.svg');
-  background-size: 300% 100%;
+  background-size: 500% 100%;
   background-position: 0 0;
   background-repeat: no-repeat;
   border-radius: 8px;
   border: 2px solid var(--border-default);
   box-shadow: inset 0 0 8px rgba(0,0,0,0.3);
   transition: border-color 0.2s ease;
+  image-rendering: pixelated;
 }
 
 .narrator-avatar-container:hover .narrator-avatar {
   border-color: var(--accent-gold);
 }
 
-/* Mouth animation when speaking */
-.narrator-avatar.speaking {
-  animation: narrator-mouth 0.35s steps(3) infinite;
+/* Custom narrator portrait (DALL-E generated) */
+.narrator-avatar.narrator-custom {
+  background-size: cover;
+  background-position: center;
+  image-rendering: pixelated;
+}
+.narrator-avatar.narrator-custom.speaking {
+  animation: narrator-custom-glow 0.6s ease-in-out infinite alternate;
 }
 
-/* Compact avatar (56px) — 300% = 168px */
-.narrator-avatar-compact.speaking {
-  animation: narrator-mouth-compact 0.35s steps(3) infinite;
+@keyframes narrator-custom-glow {
+  0% { box-shadow: inset 0 0 8px rgba(0,0,0,0.3), 0 0 6px rgba(201,162,39,0.3); }
+  100% { box-shadow: inset 0 0 8px rgba(0,0,0,0.3), 0 0 14px rgba(201,162,39,0.6); }
+}
+
+/* 5-frame mouth animation when speaking (sprite: 560px = 5×112px) */
+.narrator-avatar.speaking:not(.narrator-custom) {
+  animation: narrator-mouth 0.5s steps(5) infinite;
+}
+
+/* Compact avatar (56px) — 500% = 280px for 5 frames */
+.narrator-avatar-compact.speaking:not(.narrator-custom) {
+  animation: narrator-mouth-compact 0.5s steps(5) infinite;
 }
 
 @keyframes narrator-mouth {
   0% { background-position: 0 0; }
-  100% { background-position: -336px 0; }
+  100% { background-position: -560px 0; }
 }
 
 @keyframes narrator-mouth-compact {
   0% { background-position: 0 0; }
-  100% { background-position: -168px 0; }
+  100% { background-position: -280px 0; }
 }
 
 @keyframes dhSplashFloat {

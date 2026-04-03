@@ -688,7 +688,7 @@ export default function NarratePage() {
           <div className="flex gap-5 items-start">
             {/* Narrator avatar + TTS — horizontal, aligned */}
             <div className="flex-shrink-0 pt-0.5">
-              <TalkingNarrator text={output} compact speechLang={speechLang} />
+              <TalkingNarrator text={output} compact speechLang={speechLang} campaignId={campaignId} />
             </div>
 
             {/* Narration text */}
